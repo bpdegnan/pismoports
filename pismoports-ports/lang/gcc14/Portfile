@@ -423,7 +423,24 @@ platform darwin {
 configure.cxx_stdlib
 
 build.dir           ${configure.dir}
-build.target        bootstrap-lean
+
+# pismoports: single-stage build instead of GCC's 3-stage bootstrap.
+#
+# A bootstrap builds GCC three times and checks that stages 2 and 3 come out
+# identical -- valuable to GCC's own developers, worth nothing here, where the
+# only goal is a working compiler to build ports with. Measured on the
+# emulated G3: stage1 plus part of stage2 took two days, projecting to about a
+# week for all three. One stage should be under two days.
+#
+# The usual objection to --disable-bootstrap is that the result is only as
+# trustworthy as whatever compiler built it. That objection is weak on this
+# platform: the block near the top of this Portfile already routes Darwin < 11
+# through gcc10-bootstrap, so gcc14 is built by GCC 10, not by Apple's
+# gcc 4.0.1. Note also that this Portfile *already* disables the stage
+# comparison on os.major < 11 (do-compare = /usr/bin/true), so the bootstrap
+# was not even verifying what it exists to verify.
+configure.args-append   --disable-bootstrap
+build.target            all
 
 destroot.target     install install-info-host
 
