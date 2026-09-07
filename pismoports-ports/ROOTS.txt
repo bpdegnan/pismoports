@@ -1,0 +1,15 @@
+# Top-level ports that tigermin exists to support.
+# Add a port name here and run tools/update_tigermin.py to pull it (and its
+# full dependency closure) in from macports-ports.
+
+git
+subversion
+TeXShop
+
+# A working LaTeX install roughly matching TeX Live's "basic" install
+# scheme (plain TeX + core LaTeX + widely-used recommended packages +
+# recommended fonts), without the huge lang-*/full collections.
+texlive-basic
+texlive-latex
+texlive-latex-recommended
+texlive-fonts-recommended

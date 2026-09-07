@@ -1,0 +1,36 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem          1.0
+PortGroup           texlive 1.0
+
+name                texlive-latex-recommended
+version             74487
+revision            0
+
+categories          tex
+maintainers         {dports @drkp}
+license             Copyleft Permissive
+description         TeX Live: LaTeX recommended packages
+long_description    A collection of recommended add-on packages for LaTeX which have widespread use.
+
+checksums           texlive-latex-recommended-74487-run.tar.xz \
+                    rmd160  459cca1e359d89157e9d6eb6cab8d88a4fce9d17 \
+                    sha256  0e91e424f26585d339b38fe07eeca8147b99acc71baa39ed5bac133ec63e4563 \
+                    size    8656512 \
+                    texlive-latex-recommended-74487-doc.tar.xz \
+                    rmd160  99edc01f52ba35b742e8f833b00f9ea96072d419 \
+                    sha256  8cf74896addecc115b03e02d67137928bb284def34307f9dedddb50e9f83f03f \
+                    size    49646112 \
+                    texlive-latex-recommended-74487-src.tar.xz \
+                    rmd160  2f40f92d2e63d025163b4f608d8b712902a8fb70 \
+                    sha256  38740eef10e69dfbebe8811e2534c948afb131fddd53c48f11f61545d92898c1 \
+                    size    2362044
+
+depends_lib         port:texlive-latex
+
+texlive.binaries    lwarpmk pdfatfi thumbpdf
+
+# beamer requires pgf; see #25478 (pgf is now in texlive-pictures)
+depends_lib-append port:texlive-pictures
+
+texlive.texmfport

@@ -1,0 +1,16 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem          1.0
+PortGroup           perl5 1.0
+
+perl5.branches      5.28 5.30 5.32 5.34
+perl5.setup         Scalar-List-Utils 1.69
+revision            0
+license             {Artistic-1 GPL}
+maintainers         nomaintainer
+description         Scalar::List::Utils - A distribution of general-utility subroutines
+long_description    {*}${description}
+
+checksums           rmd160  0ae0edc0742217ad53b15c60f68436da775b22d0 \
+                    sha256  49108037dc31ba4953aa8be57c1c72f3e922dde1fa328f1eb39a329f1e6314fc \
+                    size    181435

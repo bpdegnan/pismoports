@@ -1,0 +1,45 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem          1.0
+PortGroup           perl5 1.0
+
+name                p5-cgi
+perl5.branches      5.28 5.30 5.32 5.34
+perl5.setup         CGI 4.68 ../../authors/id/L/LE/LEEJO
+revision            0
+license             Artistic-2
+maintainers         nomaintainer
+description         CGI - Handle Common Gateway Interface requests and responses
+long_description    {*}${description}
+
+platforms           {darwin any}
+supported_archs     noarch
+
+checksums           rmd160  84ccf5ca94383aefc8153476ed60e5d3940b85e7 \
+                    sha256  12fb5a5b392032413571169257f98533488005550774bcbd0715be687a590cf2 \
+                    size    208410
+
+if {${perl5.major} != ""} {
+    depends_build-append \
+                    port:p${perl5.major}-test-nowarnings \
+                    port:p${perl5.major}-test-warn
+
+    depends_lib-append \
+                    port:p${perl5.major}-html-parser \
+                    port:p${perl5.major}-uri
+
+    # https://github.com/leejo/CGI.pm/issues/264
+    if {${os.platform} eq "darwin" && ${os.major} <= 18} {
+        depends_extract port:libarchive
+        extract.post_args | ${prefix}/bin/bsdtar -xf -
+    }
+}
+
+notes {
+    CGI is considered to be a legacy module and
+    is in maintenance mode for critical issues only.
+}
+
+livecheck.type      regex
+livecheck.url       https://cpan.metacpan.org/authors/id/L/LE/LEEJO
+livecheck.regex     "CGI-(\\d+(?:\\.\\d+)*)"

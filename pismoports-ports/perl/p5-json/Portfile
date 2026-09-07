@@ -1,0 +1,27 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem          1.0
+PortGroup           perl5 1.0
+
+perl5.branches      5.28 5.30 5.32 5.34
+perl5.setup         JSON 4.10 ../../authors/id/I/IS/ISHIGAKI
+revision            0
+license             {Artistic-1 GPL}
+platforms           {darwin any}
+maintainers         nomaintainer
+supported_archs     noarch
+
+description         parse and convert to JSON (JavaScript Object Notation).
+long_description    This module converts between JSON \
+                    (JavaScript Object Notation) and Perl data structure \
+                    into each other. For JSON, See to \
+                    http://www.crockford.com/JSON/.
+
+checksums           rmd160  e4c4bbdf7004b956be196f02d3fd1987362b7b69 \
+                    sha256  df8b5143d9a7de99c47b55f1a170bd1f69f711935c186a6dc0ab56dd05758e35 \
+                    size    94342
+
+if {${perl5.major} != ""} {
+    depends_lib-append \
+                    port:p${perl5.major}-json-xs
+}

@@ -1,0 +1,23 @@
+--- posix/gawkmisc.c
++++ posix/gawkmisc.c
+@@ -32,6 +32,19 @@
+ #include "awk.h"
+
++/* Tiger (10.4 / Darwin 8) lacks <spawn.h> and posix_spawn*.
++ * Guard those references so we still compile there.
++ */
++#if defined(HAVE_SPAWN_H)
++# include <spawn.h>
++#endif
++
++/* If either header or functions are missing, provide a harmless stub. */
++#if !defined(HAVE_SPAWN_H) || !defined(HAVE_POSIX_SPAWN)
++static int os_disable_aslr(void) { return 0; }
++#else
+ /* existing implementation continues… */
+@@
+ /* existing implementation of os_disable_aslr using posix_spawn* */
+@@
++#endif /* HAVE_SPAWN_H && HAVE_POSIX_SPAWN */
+
+

@@ -1,0 +1,9 @@
+
+[Ww]ork
+/dist/
+/base/
+/toolchain/
+/tools/
+/notes.txt
+/macports-ports/
+__pycache__/

@@ -1,0 +1,17 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem          1.0
+PortGroup           perl5 1.0
+
+epoch               2
+perl5.branches      5.28 5.30 5.32 5.34
+perl5.setup         version 0.9933
+revision            0
+license             {Artistic-1 GPL}
+maintainers         nomaintainer
+description         version - Perl extension for Version Objects
+long_description    {*}${description}
+
+checksums           rmd160  2ece338fa59b151e9a1db198c007f150b79752a6 \
+                    sha256  dc07d9388ca3d3f67146312904bcdb35fe416bb30056158f80df3281a94fae58 \
+                    size    168523

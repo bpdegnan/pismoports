@@ -1,0 +1,85 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem          1.0
+PortGroup           texlive 1.0
+
+name                texlive-basic
+version             74523
+revision            0
+
+categories          tex
+maintainers         {dports @drkp}
+license             Copyleft Permissive
+description         TeX Live: Essential programs and files
+long_description    These files are regarded as basic for any TeX system, covering plain TeX macros, Computer Modern fonts, and configuration for common drivers\; no LaTeX.
+
+checksums           texlive-basic-74523-run.tar.xz \
+                    rmd160  011b21846d9c85838a725e9fb75e9044052bc474 \
+                    sha256  91a997cb251fd8a710d087ea63895c2a81d2b3e16afe74fa3b4d1169e61a851b \
+                    size    5032324 \
+                    texlive-basic-74523-doc.tar.xz \
+                    rmd160  6208ebd9326b7ffa09f288bb8e3537c92ce34dd3 \
+                    sha256  a3f2cbb108b9b8ebed094a506be8ac3c50f2abbf8234b900aed877a45afa6e79 \
+                    size    16384356 \
+                    texlive-basic-74523-src.tar.xz \
+                    rmd160  2f10f183209bfac0a693e4fd4c23b0bb94437bc3 \
+                    sha256  e83db903576303dce4354a36267ca56cf5ca236a7fe8771b76c0c11aeaeb8bb8 \
+                    size    294376
+
+texlive.formats      \
+    {1 luahbtex luahbtex language.def,language.dat.lua {luatex.ini}} \
+    {1 dviluatex luatex language.def,language.dat.lua {dviluatex.ini}} \
+    {1 luatex luatex language.def,language.dat.lua {luatex.ini}} \
+    {1 mf mf-nowin - {-translate-file=cp227.tcx mf.ini}} \
+    {1 etex pdftex language.def {-translate-file=cp227.tcx *etex.ini}} \
+    {1 pdfetex pdftex language.def {-translate-file=cp227.tcx *pdfetex.ini}} \
+    {1 pdftex pdftex language.def {-translate-file=cp227.tcx *pdfetex.ini}} \
+    {1 tex tex - {tex.ini}}
+
+texlive.maps      \
+    {Map euler.map} \
+    {MixedMap cm.map} \
+    {MixedMap cmextra.map} \
+    {MixedMap cyrillic.map} \
+    {MixedMap latxfont.map} \
+    {MixedMap symbols.map} \
+    {MixedMap cmtext-bsr-interpolated.map} \
+    {Map dummy-space.map} \
+    {Map mathpple.map}
+
+texlive.binaries    afm2tfm bibtex dviluatex dvipdfm dvipdfmx dvipdft dvips ebb etex extractbb fmtutil fmtutil-sys fmtutil-user gftodvi gftopk gftype inimf initex kpseaccess kpsereadlink kpsestat kpsewhich luahbtex luatex makeindex man mf mf-nowin mft mkindex mktexfmt mktexmf mktexpk mktextfm pdfetex pdftex pktogf pktype rungs simpdftex tex texhash texlua texluac tlshell updmap updmap-sys updmap-user xdvi xdvipdfmx
+
+texlive.exclude     texmf-dist/web2c/fmtutil.cnf \
+                    texmf-dist/web2c/texmf.cnf \
+                    texmf-dist/web2c/texmfcnf.lua \
+                    texmf-dist/web2c/updmap.cfg \
+                    texmf-dist/web2c/updmap.cfg \
+                    texmf-dist/tex/generic/config/language.dat \
+                    texmf-dist/tex/generic/config/language.dat.lua \
+                    texmf-dist/tex/generic/config/language.def \
+                    texmf-dist/fonts/map/dvipdfm/updmap \
+                    texmf-dist/fonts/map/dvips/updmap \
+                    texmf-dist/fonts/map/pdftex/updmap
+
+texlive.binaries-delete man
+
+patchfiles          patch-runfiles_texmf-dist_scripts_texlive_fmtutil.pl.diff
+post-patch {
+    reinplace "s|@@TEXMFDIST@@|${texlive_texmfdist}|" ${worksrcpath}/runfiles/texmf-dist/scripts/texlive/fmtutil.pl
+    reinplace "s|@@PREFIX@@|${prefix}|" ${worksrcpath}/runfiles/texmf-dist/scripts/texlive/fmtutil.pl
+    
+    reinplace "s|rungs|gs|g" ${worksrcpath}/runfiles/texmf-dist/dvipdfmx/dvipdfmx.cfg
+}
+
+
+# mktexlsr is in texlive.infra which we don't install
+# The perl version should be sufficient.
+post-destroot {
+    ln -s mktexlsr.pl ${destroot}${texlive_texmfdist}/scripts/texlive/mktexlsr
+}
+texlive.binaries-append mktexlsr
+
+texlive.forceupdatecnf yes
+texlive.use_mktexlsr_on_deactivate no
+
+texlive.texmfport

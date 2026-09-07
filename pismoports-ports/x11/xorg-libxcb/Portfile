@@ -1,0 +1,99 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem      1.0
+
+name            xorg-libxcb
+version         1.17.0
+revision        0
+
+checksums       rmd160  a5e36fb6d60154354c60c6fe94082f4c2d23e5fd \
+                sha256  599ebf9996710fea71622e6e184f3a8ad5b43d0e5fa8c4e407123c88a59a6d55 \
+                size    455208
+
+categories      x11 devel
+license         X11
+maintainers     {jeremyhu @jeremyhu} openmaintainer
+description     X.org libxcb
+homepage        https://xcb.freedesktop.org/
+long_description The X C Binding (XCB) library
+master_sites     xorg:individual/lib
+
+distname        libxcb-${version}
+
+use_xz          yes
+
+depends_build   port:pkgconfig
+
+# Made python311 the only options
+depends_lib     port:xorg-libXau \
+                port:xorg-libXdmcp \
+                port:xorg-xcb-proto 
+                
+configure.checks.implicit_function_declaration.whitelist-append strchr
+
+configure.args  --disable-devel-docs \
+                --disable-silent-rules
+
+variant docs description "Install extra documentation" {
+    depends_build-append \
+        path:bin/doxygen:doxygen \
+        path:bin/dot:graphviz
+
+    depends_skip_archcheck-append \
+        doxygen
+
+    configure.args-delete \
+        --disable-devel-docs
+
+    configure.args-append \
+        --enable-devel-docs
+
+    configure.env-append \
+        DOXYGEN=${prefix}/bin/doxygen
+}
+
+# No need to use require_active_variants here. Technically, `xorg-libxcb +python37` builds fine
+# with `xorg-xcb-proto +python36` as the xcbgen module in xorg-xcb-proto is not located using
+# usual Python import mechanism. Instead, the path for xcbgen is recorded in
+# `$prefix/lib/pkgconfig/xcb-proto.pc` as the pythondir variable when building xorg-xcb-proto
+# and the build system of libxcb loads xcbgen using that pkg-config variable [1].
+#
+# [1] https://gitlab.freedesktop.org/xorg/lib/libxcb/blob/1.13.1/configure.ac#L85
+#
+variant python39 conflicts python310 python311 python312 python313 description {Use python 3.9} {
+    depends_build-append    port:python39
+    license_noconflict      python39
+    configure.python        ${prefix}/bin/python3.9
+}
+
+variant python310 conflicts python39 python311 python312 python313 description {Use python 3.10} {
+    depends_build-append    port:python310
+    license_noconflict      python310
+    configure.python        ${prefix}/bin/python3.10
+}
+
+variant python311 conflicts python39 python310 python312 python313 description {Use python 3.11} {
+    depends_build-append    port:python311
+    license_noconflict      python311
+    configure.python        ${prefix}/bin/python3.11
+}
+#
+#variant python312 conflicts python39 python310 python311 python313 description {Use python 3.12} {
+#    depends_build-append    port:python312
+#    license_noconflict      python312
+#    configure.python        ${prefix}/bin/python3.12
+#}
+#
+#variant python313 conflicts python39 python310 python311 python312 description {Use python 3.13} {
+#    depends_build-append    port:python313
+#    license_noconflict      python313
+#    configure.python        ${prefix}/bin/python3.13
+#}
+#
+if {![variant_isset python39] && ![variant_isset python310] && ![variant_isset python311] } {
+    default_variants +python311
+}
+
+livecheck.type  regex
+livecheck.url   https://xorg.freedesktop.org/archive/individual/lib/?C=M&O=D
+livecheck.regex libxcb-(\\d+(?:\\.\\d+)*)
