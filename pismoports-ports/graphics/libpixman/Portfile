@@ -5,6 +5,10 @@ PortGroup               compiler_blacklist_versions 1.0
 PortGroup               legacysupport 1.1
 PortGroup               meson 1.0
 PortGroup               muniversal 1.0
+# Keeps the cpusubtype generic so the result loads on a G3. The -Dvmx=disabled
+# below already stops libpixman's own vector code being built; this is about
+# the Mach-O tag, which is a separate failure and a more confusing one.
+PortGroup               pismoports_g3 1.0
 
 # Please keep the libpixman and libpixman-devel ports as similar as possible.
 

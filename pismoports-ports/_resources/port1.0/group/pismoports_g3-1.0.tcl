@@ -3,29 +3,34 @@
 # This portgroup makes a port produce binaries that actually run on a
 # PowerBook G3. It does two separate jobs:
 #
-#    * constrains code generation to the 750/G3 instruction set, so no
-#      AltiVec instruction is ever emitted
+#    * keeps AltiVec out of the generated code
 #    * forces the Mach-O cpusubtype to ALL, so the resulting binary is not
 #      tagged as requiring a G4 or better
 #
-# Both matter. A G3 has no AltiVec unit, so a G4-targeted instruction is an
-# illegal instruction: the process dies with SIGILL rather than degrading.
-# And a binary can be perfectly G3-safe in its instructions yet still refuse
-# to load, because the linker stamped a cpusubtype the loader rejects. The
-# second failure is the confusing one -- it looks like file corruption.
+# The second is the one that does the real work here. gcc14 targeting
+# powerpc-apple-darwin8 already defaults to generic 32-bit PowerPC with
+# __ALTIVEC__ undefined, so there is no ISA to restrict -- -mno-altivec below
+# is insurance against a port turning it on, not the mechanism.
+#
+# The cpusubtype tag is the live hazard. A binary can be perfectly G3-safe in
+# its instructions and still refuse to load because the linker stamped a
+# subtype the loader rejects, and that failure looks like file corruption
+# rather than an architecture problem.
 #
 # Usage:
 #
 #   PortGroup pismoports_g3 1.0
 #
-#   pismoports_g3.cpu:      target CPU passed to -mcpu/-mtune. Default 603,
+#   pismoports_g3.cpu:      target CPU passed to -mtune. Default 603,
 #                           which is the conservative choice: it is a strict
 #                           subset of what a 750 (G3) implements, so it also
 #                           runs on the earlier PowerPC machines. Set to 750
 #                           if a port genuinely benefits and you only care
 #                           about the Pismo.
-#   pismoports_g3.altivec:  set to yes to allow AltiVec. Only do this for a
-#                           port that will never be installed on a G3.
+#   pismoports_g3.altivec:  set to yes to allow AltiVec. Verified that gcc14
+#                           leaves __ALTIVEC__ undefined by default, so
+#                           -mno-altivec is belt-and-braces, not the thing
+#                           actually keeping vector code out.
 #   pismoports_g3.lto:      set to yes to leave LTO alone. Off by default:
 #                           GCC's LTO has been observed to re-stamp the
 #                           cpusubtype at link time, undoing the work above.
@@ -67,7 +72,24 @@ if {${os.platform} eq "darwin" && ${os.arch} eq "powerpc"} {
     # Portfile can override the options above after including the group.
     pre-configure {
         set cpu [option pismoports_g3.cpu]
-        set gen [list -mcpu=${cpu} -mtune=${cpu} -m32]
+
+        # -mtune, deliberately NOT -mcpu. Verified against gcc14 14.3.0 on
+        # Darwin 8 / ppc750:
+        #
+        #   -mcpu=603 ...              ld: unknown/unsupported architecture
+        #                              name for: -arch ppc603
+        #   -mcpu=603 ... -arch ppc    same failure; the explicit -arch does
+        #                              not override it
+        #   -mcpu=750 ... -arch ppc    links, but stamps cpusubtype ppc750 --
+        #                              which defeats force_cpusubtype_ALL below
+        #   -mtune=603 ...             links, cpusubtype ALL
+        #
+        # gcc turns -mcpu= into an -arch ppcNNN for the linker, and ld has no
+        # such architecture name. -mtune changes instruction scheduling only,
+        # leaves the ISA and the arch tag alone, and is what we actually want:
+        # the default ISA for powerpc-apple-darwin8 is already generic 32-bit
+        # PowerPC, so there is nothing to restrict.
+        set gen [list -mtune=${cpu} -m32]
 
         if {![tbool pismoports_g3.altivec]} {
             lappend gen -mno-altivec
