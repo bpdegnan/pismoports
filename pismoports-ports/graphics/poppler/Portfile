@@ -46,16 +46,31 @@ depends_lib-append \
                     port:freetype \
                     port:gettext-runtime \
                     path:lib/pkgconfig/glib-2.0.pc:glib2 \
-                    port:gpgme \
                     port:lcms2 \
                     port:libiconv \
                     path:include/turbojpeg.h:libjpeg-turbo \
                     port:libpng \
-                    port:nss \
                     port:openjpeg \
                     port:poppler-data \
                     port:tiff \
                     port:zlib
+
+# pismoports: PDF digital-signature support is off, and nss/gpgme are dropped
+# from depends_lib with it. Poppler is the ONLY consumer of either in this
+# closure, and between them they pull in eleven ports -- nss, gpgme, gnupg2,
+# gnutls, nettle, npth, libgcrypt, libassuan, libksba, p11-kit, pinentry --
+# three of which failed to build on Darwin 8 / ppc:
+#
+#   nettle  getopt.h: conflicting types for 'getopt'; have 'int(void)'
+#           gcc14 defaults to C23, where an empty parameter list means (void),
+#           so nettle's 1990s unprototyped C no longer compiles
+#   npth    use-darwin-compat.diff will not apply to npth 1.8
+#   nss     shlibsign fails generating libsoftokn3.chk
+#
+# None of that is worth fixing to gain signature verification on a machine
+# whose job is typesetting papers. Both spellings of the NSS option are set
+# because 24.04 moved from WITH_NSS3 to ENABLE_NSS3 and cmake ignores unknown
+# cache variables anyway.
 
 # remove top-level paths, such that internal headers and
 # libraries are used instead of any already-installed ones.
@@ -102,7 +117,9 @@ configure.args-append \
                     -DENABLE_UNSTABLE_API_ABI_HEADERS=ON \
                     -DGLIB2_MKENUMS_PYTHON=${prefix}/bin/python${py_ver} \
                     -DRUN_GPERF_IF_PRESENT=OFF \
-                    -DWITH_NSS3=ON
+                    -DWITH_NSS3=OFF \
+                    -DENABLE_NSS3=OFF \
+                    -DENABLE_GPGME=OFF
 
 # Poppler cmake doesn't understand build type "MacPorts"; use release unless +debug is set
 if {[variant_isset debug]} {
