@@ -7,7 +7,7 @@ PortGroup           select 1.0
 epoch               3
 name                libgcc
 version             10.0
-revision            0
+revision            1
 
 conflicts           libgcc-devel
 
@@ -32,7 +32,18 @@ variant universal   { }
 # Pick the gcc version that provides the primary runtime.
 # NOTE: The logic here must match that in the gccX ports *and*
 # that in _resources/port1.0/group/compilers-1.0.tcl
-set gcc_version     16
+#
+# 14, not 16. gcc14 is the only compiler this tree installs, and it configures
+# with --disable-tls (Darwin 8 has no native TLS), so its libstdc++ headers use
+# the legacy std::call_once -- the one calling __once_functor,
+# __get_once_mutex and __set_once_functor_lock_ptr. lang/gcc16 drops
+# --disable-tls on purpose, so libgcc16's libstdc++ exported only the
+# emulated-TLS symbols and none of the legacy ones. Compiler and runtime
+# disagreed and every C++ port touching std::call_once failed to link, which
+# is what killed icu and behind it poppler, texlive-bin and ngspice.
+# compilers-1.0.tcl already stops at 14, so this restores the consistency the
+# NOTE above asks for.
+set gcc_version     14
 
 depends_lib         port:libgcc${gcc_version}
 

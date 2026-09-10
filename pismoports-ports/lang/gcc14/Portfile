@@ -455,23 +455,165 @@ proc dylib_list {location} {
     return ${dylibs}
 }
 
+# NOTE (pismoports): this block is upstream MacPorts' real libgcc14
+# subport, restored deliberately. This tree had replaced it with a stub
+# reading "No need to build as nothing that isn't provided by libgcc16".
+# That was only true while lang/libgcc pointed at 16. gcc14 configures
+# with --disable-tls and gcc16 does not, so libgcc16's libstdc++ carried
+# the emulated-TLS std::call_once and none of the legacy symbols gcc14's
+# headers call -- every C++ port using std::call_once failed to link.
+# gcc14 is the only compiler installed here, so it provides the runtime.
 if {${subport} eq ${libgccname}} {
-    # No need to build as nothing that isn't provided by libgcc16
-    platforms       any
 
-    depends_run     path:share/doc/libgcc/README:libgcc
-    depends_lib
+    # Always provides primary runtime so always in conflict
+    conflicts libgcc-devel
 
-    fetch.type      none
-    build           { }
-    use_configure   no
-    patchfiles
-
-    destroot {
-        set doc_dir ${destroot}${prefix}/share/doc/${subport}
-        xinstall -m 755 -d ${doc_dir}
-        system "echo ${subport} provides no runtime > ${doc_dir}/README"
+    # Activate hack for new libgcc
+    # https://trac.macports.org/wiki/PortfileRecipes#deactivatehack
+    pre-activate {
+        if {![catch {set installed [lindex [registry_active libgcc7] 0]}]} {
+            # Extract the version and revision of the installed libgcc7
+            set _version [lindex $installed 1]
+            set _revision [lindex $installed 2]
+            if {[vercmp $_version < 7.5.0]
+                || ($_version eq "7.5.0" && [vercmp $_revision < 2])} {
+                registry_deactivate_composite libgcc7 "" [list ports_nodepcheck 1]
+            }
+        }
+        if {![catch {set installed [lindex [registry_active libgcc8] 0]}]} {
+            # Extract the epoch of the installed libgcc8
+            set _epoch [lindex $installed 5]
+            # If < 5 need to deactivate
+            if {[vercmp $_epoch < 5]} {
+                registry_deactivate_composite libgcc8 "" [list ports_nodepcheck 1]
+            }
+        }
+        if {![catch {set installed [lindex [registry_active libgcc10] 0]}]} {
+            # Extract the epoch of the installed libgcc10
+            set _epoch [lindex $installed 5]
+            # If < 6 need to deactivate
+            if {[vercmp $_epoch < 6]} {
+                registry_deactivate_composite libgcc10 "" [list ports_nodepcheck 1]
+            }
+        }
+        if {![catch {set installed [lindex [registry_active libgcc11] 0]}]} {
+            # Extract the epoch of the installed libgcc11
+            set _epoch [lindex $installed 5]
+            # If < 1 need to deactivate
+            if {[vercmp $_epoch < 1]} {
+                registry_deactivate_composite libgcc11 "" [list ports_nodepcheck 1]
+            }
+        }
+        if {![catch {set installed [lindex [registry_active libgcc12] 0]}]} {
+            # Extract the epoch of the installed libgcc12
+            set _epoch [lindex $installed 5]
+            # If < 1 need to deactivate
+            if {[vercmp $_epoch < 1]} {
+                registry_deactivate_composite libgcc12 "" [list ports_nodepcheck 1]
+            }
+        }
+        if {![catch {set installed [lindex [registry_active libgcc13] 0]}]} {
+            # Extract the epoch of the installed libgcc13
+            set _epoch [lindex $installed 5]
+            # If < 1 need to deactivate
+            if {[vercmp $_epoch < 1]} {
+                registry_deactivate_composite libgcc13 "" [list ports_nodepcheck 1]
+            }
+        }
+        if {![catch {set installed [lindex [registry_active libgcc-devel] 0]}]} {
+            # Extract the epoch of the installed libgcc-devel
+            set _epoch [lindex $installed 5]
+            # If < 5 need to deactivate
+            if {[vercmp $_epoch < 5]} {
+                registry_deactivate_composite libgcc-devel "" [list ports_nodepcheck 1]
+            }
+        }
     }
+
+    # http://trac.macports.org/ticket/35770
+    # http://trac.macports.org/ticket/38814
+    # While there can be multiple versions of these runtimes in a single
+    # process, it is not possible to pass objects between different versions,
+    # so we simplify this by having the libgcc port provide the newest version
+    # of these runtimes for all versions of gcc to use.
+    #
+    # If there is a binary incompatible change to the runtime in a future
+    # version of gcc, then the latest version of gcc to provide a given ABI
+    # version should continue to provide a subport for that and older gcc
+    # versions.
+
+    depends_run
+    depends_lib-delete   port:zlib port:libiconv
+    depends_build-append {*}${depends_lib}
+    depends_lib          port:zlib port:libiconv
+
+    configure.args-replace \
+        --libdir=${prefix}/lib/${name} \
+        --libdir=${prefix}/lib/libgcc
+
+    configure.args-replace \
+        --with-gxx-include-dir=${prefix}/include/${name}/c++/ \
+        --with-gxx-include-dir=${prefix}/include/gcc/c++/
+
+    post-destroot {
+
+        # Temporary working dir for dylibs
+        file mkdir ${destroot}${prefix}/lib/libgcc.merged
+
+        # loop over libs to install
+        set dylibs [dylib_list ${destroot}${prefix}/lib/libgcc]
+        foreach dylib ${dylibs} {
+
+            # Different OS versions (e.g. Leopard) or architectures (e.g. PPC) don't produce all the dylibs
+            # https://trac.macports.org/ticket/40098
+            # https://trac.macports.org/ticket/40100
+            if { ![file exists ${destroot}${prefix}/lib/libgcc/${dylib}] } {
+                continue
+            }
+
+            # Move dylib to temp area
+            move ${destroot}${prefix}/lib/libgcc/${dylib} ${destroot}${prefix}/lib/libgcc.merged
+
+            # If needed create versionless sym link to dylib
+            set dylib_split [split ${dylib} "."]
+            set dylib_nover ${destroot}${prefix}/lib/libgcc.merged/[lindex ${dylib_split} 0].[lindex ${dylib_split} end]
+            if { ![file exists ${dylib_nover}]  } {
+                ln -s ${dylib} ${dylib_nover}
+            }
+
+            # Universal support
+            if {[variant_exists universal] && [variant_isset universal]} {
+                foreach archdir [glob ${destroot}${prefix}/lib/libgcc/*/] {
+                    set archdir_nodestroot [string map "${destroot}/ /" ${archdir}]
+                    if {[file exists ${archdir}/${dylib}]} {
+                        system "install_name_tool -id ${prefix}/lib/libgcc/${dylib} ${archdir}/${dylib}"
+                        foreach link [glob -tails -directory ${archdir} *.dylib] {
+                            system "install_name_tool -change ${archdir_nodestroot}${link} ${prefix}/lib/libgcc/${link} ${archdir}/${dylib}"
+                        }
+                        system "lipo -create -output ${destroot}${prefix}/lib/libgcc.merged/${dylib}~ ${destroot}${prefix}/lib/libgcc.merged/${dylib} ${archdir}/${dylib} && mv ${destroot}${prefix}/lib/libgcc.merged/${dylib}~ ${destroot}${prefix}/lib/libgcc.merged/${dylib}"
+                    }
+                }
+            }
+
+            # strip debug symbols to supress debugger warnings:
+            # http://trac.macports.org/attachment/ticket/34831
+            if {! [string match *libgcc_ext* ${dylib}]} {
+                system "strip -x ${destroot}${prefix}/lib/libgcc.merged/${dylib}"
+            }
+        }
+
+        file delete -force ${destroot}${prefix}/bin
+        file delete -force ${destroot}${prefix}/share
+        file delete -force ${destroot}${prefix}/lib/libgcc
+        file delete -force ${destroot}${prefix}/libexec
+
+        move ${destroot}${prefix}/lib/libgcc.merged ${destroot}${prefix}/lib/libgcc
+
+        # For binary compatibility with binaries that linked against the old libstdcxx port
+        ln -s libgcc/libstdc++.6.dylib ${destroot}${prefix}/lib/libstdc++.6.dylib
+
+    }
+
 }
 
 if {${subport} eq ${name}} {
