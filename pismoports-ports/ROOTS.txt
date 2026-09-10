@@ -1,10 +1,19 @@
-# Top-level ports that tigermin exists to support.
-# Add a port name here and run tools/update_tigermin.py to pull it (and its
-# full dependency closure) in from macports-ports.
+# Top-level ports that pismoports exists to support.
+# Add a port name here and run tools/update_pismoports_tree.py to pull it (and
+# its full dependency closure) in from macports-ports.
 
 git
 subversion
 TeXShop
+
+# Editor. vim 9.1 has +job/+channel, so asynchronous linting (ALE driving
+# chktex, gcc -fsyntax-only, ...) works without a language server -- which
+# matters because no LSP server is realistically runnable on a G3.
+vim
+
+# pkill/pgrep, which Tiger does not ship. Installed on yebisu by hand; listed
+# here so regenerating the tree does not prune it back out.
+proctools
 
 # A working LaTeX install roughly matching TeX Live's "basic" install
 # scheme (plain TeX + core LaTeX + widely-used recommended packages +
