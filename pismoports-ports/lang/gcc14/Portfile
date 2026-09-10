@@ -25,7 +25,13 @@ version             ${gcc_major_v}.3.0
 revision            0
 
 set libgccname      lib${name}
-subport             ${libgccname} { revision [ expr ${revision} + 1 ] }
+# +2, not +1. The stub this subport replaced also computed to revision 1, so
+# with +1 MacPorts saw libgcc14 @14.3.0_1 already installed and did nothing --
+# `port install libgcc14` returned success in three minutes having built
+# nothing, leaving libgcc16 still providing libstdc++. Bumping the offset
+# rather than ${revision} keeps gcc14 itself at _0 so the compiler is not
+# rebuilt as a side effect.
+subport             ${libgccname} { revision [ expr ${revision} + 2 ] }
 
 set libcxxname      ${name}-libcxx
 
