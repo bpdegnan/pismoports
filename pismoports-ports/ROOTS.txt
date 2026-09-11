@@ -15,6 +15,16 @@ vim
 # here so regenerating the tree does not prune it back out.
 proctools
 
+# Circuit simulator, so paper work can be checked on the Pismo. These come
+# from bpdegnan/macportseda, NOT from macports-ports -- eda-ngspice47 installs
+# into its own prefix (libexec/eda/ngspice47) and is reached via `port select`.
+# It needs the eda-github PortGroup, also copied from that tree, which prints
+# "report this to macportseda, not MacPorts trac" on a failed phase.
+# Cheaper than the stock ngspice port because it does not depend on
+# ngspice-docs, which is what drags in xmlto/w3m/libxslt.
+eda-ngspice47
+eda-ngspice_select
+
 # A working LaTeX install roughly matching TeX Live's "basic" install
 # scheme (plain TeX + core LaTeX + widely-used recommended packages +
 # recommended fonts), without the huge lang-*/full collections.
