@@ -15,7 +15,7 @@ name                        glib2
 conflicts                   glib2-devel
 set my_name                 glib
 version                     2.78.4
-revision                    2
+revision                    3
 epoch                       1
 
 checksums                   rmd160  7941be85af18c428d86f4a00e52f41542b061aa9 \
@@ -120,23 +120,28 @@ compiler.blacklist-append   gcc-3.3 *gcc-4.0 *gcc-4.2
 # failed build, and if it succeeds it saves building gcc10, gcc10-libcxx and
 # libgcc10 entirely.
 #
-# WHEN IT FAILS, TRY THIS BEFORE BUILDING gcc10.
+# RESULT OF THAT EXPERIMENT (2026-09-12): it failed, exactly as predicted, and
+# on exactly one of the three warnings-turned-errors:
 #
-# GCC 14 promoted -Wimplicit-function-declaration, -Wint-conversion and
-# -Wincompatible-pointer-types from warnings to hard errors, which is what
-# broke a great many ports in 2024 and is the most likely thing #71658 was.
-# If the first error in the log is one of those three, this is the cheap fix:
+#   glib/gconvert.c:281:21: error: passing argument 2 of 'libiconv' from
+#   incompatible pointer type [-Wincompatible-pointer-types]
 #
-#     configure.cflags-append  -std=gnu17
+# That is the well-known iconv() second-argument const mismatch -- POSIX says
+# char**, several implementations say const char** -- which every compiler up
+# to GCC 13 reported as a warning. So #71658 was almost certainly this, and
+# gcc10 is NOT warranted: there is no miscompile, no ICE and no link error,
+# just GCC 14 being stricter than the 2024 source expected.
 #
-# or, more narrowly:
-#
-#     configure.cflags-append  -Wno-error=implicit-function-declaration \
-#                              -Wno-error=int-conversion \
-#                              -Wno-error=incompatible-pointer-types
-#
-# Only if the failure is something else -- a miscompile, an ICE, a link error
-# -- is gcc10 actually warranted. In that case restore this:
+# Taking the narrow fix rather than -std=gnu17, so that the other two
+# diagnostics stay errors and a genuine type bug elsewhere in glib is still
+# caught.
+configure.cflags-append     -Wno-error=implicit-function-declaration \
+                            -Wno-error=int-conversion \
+                            -Wno-error=incompatible-pointer-types
+
+# Kept for the record: if glib2 ever fails here with a miscompile, an ICE or a
+# link error rather than a diagnostic, gcc10 IS the answer and this is what to
+# restore.
 #
 #platform darwin {
 #    if {${os.major} <= 8} {

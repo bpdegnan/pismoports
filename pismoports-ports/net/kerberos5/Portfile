@@ -5,7 +5,7 @@ PortGroup                   compiler_blacklist_versions 1.0
 
 name                        kerberos5
 version                     1.21.3
-revision                    0
+revision                    1
 checksums                   rmd160  51727964dcfc3d1f83f8df342b23cd2aad48f526 \
                             sha256  b7a4cd5ead67fb08b980b21abd150ff7217e85ea320c9ed0c6dadd304840ad35 \
                             size    9136145
@@ -47,7 +47,34 @@ patchfiles                  patch-util__verto__Makefile.in-use-nonzero-compat-ve
                             patch-lib_rpc_Makefile.in-explicitly-link-krb5support.diff \
                             no-Werror.patch
 
-use_autoreconf              yes
+# NOT autoreconf. krb5's src/configure.ac opens with K5_AC_INIT, a macro of
+# its own defined in aclocal.m4, rather than a literal AC_INIT. autoconf 2.72
+# tightened the check that a file really is an autoconf script, and 2.73 --
+# which is what is installed here -- rejects it outright:
+#
+#   autoreconf: error: configure.ac: AC_INIT not found; not an autoconf script?
+#
+# krb5 1.21.3 predates that change. The tarball already ships a generated
+# ./configure, so the regeneration buys nothing; the only reason it was run
+# was to pick up no-Werror.patch, which edits aclocal.m4. Applying the same
+# edit to the generated configure instead gets the identical result without
+# involving autoconf at all.
+use_autoreconf              no
+
+post-patch {
+    # Same change no-Werror.patch makes to aclocal.m4, applied to the shipped
+    # configure: drop the -Werror=<diagnostic> entries from the warning-flag
+    # probe list. GCC 14 *accepts* those flags, so krb5 enables them and then
+    # turns its own long-standing warnings into hard errors -- the same
+    # warnings-became-errors class that broke glib2 here.
+    #
+    # Anchored to the flag-list line rather than applied globally: "error=" is
+    # on 23 lines of this generated script, and the rest are the probe
+    # machinery that has to keep working.
+    reinplace -W ${worksrcpath} \
+        {/^[[:space:]]*for flag in overflow/s/ error=[a-z-]*//g} configure
+}
+
 configure.checks.implicit_function_declaration.whitelist-append strchr
 
 # kerberos5 fails to build in its own presence, see #23769, #37944
