@@ -110,6 +110,9 @@ patchfiles-append patch-revert-lib-name-tagged.diff
 # in the absence of __STRICT_ANSI__
 platform darwin 8 {
     patchfiles-append patch-tiger-availability.diff
+    # boost::locale declares a member function isdigit(); Tiger's <ctype.h>
+    # makes that a macro and the declaration disintegrates. See the patch.
+    patchfiles-append patch-tiger-isdigit-macro.diff
 }
 
 # see https://trac.macports.org/wiki/UsingTheRightCompiler
