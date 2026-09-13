@@ -15,7 +15,7 @@ name                        glib2
 conflicts                   glib2-devel
 set my_name                 glib
 version                     2.78.4
-revision                    4
+revision                    5
 epoch                       1
 
 checksums                   rmd160  7941be85af18c428d86f4a00e52f41542b061aa9 \
@@ -143,12 +143,22 @@ compiler.blacklist-append   gcc-3.3 *gcc-4.0 *gcc-4.2
 # is really a 32-bit artifact: gsize is unsigned long here, so a %u format that
 # is correct on every LP64 machine upstream tests on is wrong on ppc.
 #
-# So: -Wno-error wholesale rather than another round of whack-a-mole. Each
-# iteration costs about an hour of emulated build time to discover one more
-# diagnostic, and 2.78.4 was developed and shipped against compilers that
-# treated all of these as warnings. This restores exactly that behaviour --
-# the warnings are all still printed, none of them abort the build.
-configure.cflags-append     -Wno-error
+# Switching those three for a blanket -Wno-error made things WORSE: the build
+# went straight back to failing on gconvert.c, the error the three flags had
+# already fixed. The two forms are not interchangeable.
+#
+#   -Wno-error=<diagnostic>  outranks a bare -Werror no matter which order
+#                            they appear in on the command line
+#   -Wno-error               is just another general switch, so glib2's own
+#                            later -Werror overrides it
+#
+# meson puts the port's cflags before glib2's own, so only the specific form
+# survives. Hence: keep the specific flags, and add the one the second round
+# uncovered (-Werror=format= on gmem.c) to the same list.
+configure.cflags-append     -Wno-error=implicit-function-declaration \
+                            -Wno-error=int-conversion \
+                            -Wno-error=incompatible-pointer-types \
+                            -Wno-error=format
 
 # Kept for the record: if glib2 ever fails here with a miscompile, an ICE or a
 # link error rather than a diagnostic, gcc10 IS the answer and this is what to
