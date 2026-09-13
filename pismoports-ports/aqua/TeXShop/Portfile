@@ -63,7 +63,7 @@ platform darwin {
 
     if {${os.major} > 20 && ${os.major} < 24} {
         version     5.47
-        revision    0
+        revision    1
 
         checksums   rmd160  dacbc0d49396153257dd5dcc16ad3af349b35983 \
                     sha256  d517a74bbee04d60bc7fb73b489dc28341a3af9b9d9c034d9a7d9481439710a5 \
@@ -98,7 +98,20 @@ platform darwin {
 
     if {${os.major} < 11} {
         # Version for legacy systems.
-        known_fail  yes
+        #
+        # known_fail was set here, but 2.47 builds fine on Tiger once the
+        # GCC_VERSION handling below is right. The only failure was that
+        # MacPorts prefers apple-gcc-4.2, whose binary is named gcc-apple-4.2,
+        # so the reinplaces that derive GCC_VERSION from the compiler path
+        # picked up "apple" as the version and Xcode refused the project
+        # before compiling anything:
+        #
+        #     Invalid value 'apple' for GCC_VERSION
+        #     ** BUILD FAILED **
+        #
+        # With the vendor-aware parse and apple-gcc-4.2 blacklisted (Xcode 2.5
+        # only has gcc 4.0 and 3.3), it builds and installs a ppc TeXShop.app.
+        # Verified on darwin 8 / ppc: TeXShop @2.47_0, Mach-O executable ppc.
 
         master_sites    ${homepage}/
 
@@ -123,13 +136,26 @@ platform darwin {
                 system "cd ${worksrcpath} && lipo -remove x86_64 $sparkle -output $sparkle"
             }
             reinplace "s|defaultConfigurationName = Debug|defaultConfigurationName = Release|" ${worksrcpath}/${name}.xcodeproj/project.pbxproj
-            reinplace "s|GCC_VERSION_i386 = 4\.0|GCC_VERSION_i386 = [lindex [split ${configure.objc} -] 1]|g" ${worksrcpath}/3rdparty/OgreKit/OgreKit.xcodeproj/project.pbxproj
-            reinplace "s|GCC_VERSION_ppc = 3\.3|GCC_VERSION_ppc = [lindex [split ${configure.objc} -] 1]|g" ${worksrcpath}/3rdparty/OgreKit/OgreKit.xcodeproj/project.pbxproj
-            reinplace "s|GCC_VERSION = 4\.0|GCC_VERSION = [lindex [split ${configure.objc} -] 1]|" ${worksrcpath}/TeXShop.xcodeproj/project.pbxproj
-            reinplace "s|GCC_VERSION = 4\.0|GCC_VERSION = [lindex [split ${configure.objc} -] 1]|" ${worksrcpath}/3rdparty/TeX-mdimporter/TeX.xcodeproj/project.pbxproj
+            reinplace "s|GCC_VERSION_i386 = 4\.0|GCC_VERSION_i386 = [lindex [split ${configure.objc} -] end]|g" ${worksrcpath}/3rdparty/OgreKit/OgreKit.xcodeproj/project.pbxproj
+            reinplace "s|GCC_VERSION_ppc = 3\.3|GCC_VERSION_ppc = [lindex [split ${configure.objc} -] end]|g" ${worksrcpath}/3rdparty/OgreKit/OgreKit.xcodeproj/project.pbxproj
+            reinplace "s|GCC_VERSION = 4\.0|GCC_VERSION = [lindex [split ${configure.objc} -] end]|" ${worksrcpath}/TeXShop.xcodeproj/project.pbxproj
+            reinplace "s|GCC_VERSION = 4\.0|GCC_VERSION = [lindex [split ${configure.objc} -] end]|" ${worksrcpath}/3rdparty/TeX-mdimporter/TeX.xcodeproj/project.pbxproj
         }
         patchfiles             patch-TSDocument.m.diff
-        compiler.blacklist     clang
+
+        # Xcode 2.5 -- the newest that runs on Tiger -- ships gcc 4.0 and 3.3
+        # and knows no other value for the GCC_VERSION build setting. MacPorts
+        # otherwise prefers apple-gcc-4.2, and the reinplaces above then write
+        # a GCC_VERSION Xcode rejects outright:
+        #
+        #     Invalid value 'apple' for GCC_VERSION
+        #     ** BUILD FAILED **
+        #
+        # ('apple' rather than '4.2' because the binary is gcc-apple-4.2, so
+        # splitting the path on "-" put the vendor where the version was
+        # expected -- hence the [lindex ... end] above. Even spelled correctly,
+        # 4.2 is not a version this Xcode has.)
+        compiler.blacklist     clang apple-gcc-4.2
         destroot.target        ${name}
 
         notes "If you intend to use the Lilypond engine, please copy ${applications_dir}/${name}.app/Contents/Resources/${name}/Engines/Lilypond.engine to ~/Library/${name}/Engines/Lilypond.engine"
