@@ -11,7 +11,7 @@ PortGroup           muniversal 1.1
 set branch          2.1
 set version_date    2025-01-13T15:22:22Z
 github.setup        LuaJIT LuaJIT a4f56a459a588ae768801074b46ba0adcfb49eb1
-revision            0
+revision            2
 checksums           rmd160  a01e4fb5337b3dbb1e5eb544fc43dd8cfda9c610 \
                     sha256  b4120332a4191db9c9da2d81f9f11f0d4504fc4cff2dea0f642d3d8f1fcebd0e \
                     size    1082930
@@ -71,6 +71,76 @@ xcode_workaround.type append_to_compiler_flags
 
 configure.cflags-append -DLUAJIT_ENABLE_LUA52COMPAT
 makefile.override   CC CFLAGS LDFLAGS PREFIX
+
+platform darwin 8 {
+    # LuaJIT's ppc backend compiles clean here -- libluajit.a builds and the
+    # JIT assembles -- but the final link fails on the DWARF unwinder:
+    #
+    #   "__Unwind_RaiseException", referenced from _lj_err_throw
+    #   "___register_frame",       referenced from _mcode_allocarea
+    #   ... _Unwind_GetCFA, _Unwind_SetGR, _Unwind_SetIP, _Unwind_GetIP,
+    #       _Unwind_DeleteException, ___deregister_frame
+    #
+    # LuaJIT needs those for error handling and for registering the frames of
+    # the machine code it generates at runtime. gcc14 keeps the unwinder in a
+    # SEPARATE library -- libgcc_s.1.1.dylib does not export _Unwind_*, only
+    # libgcc_eh does -- and the gcc driver would normally add it implicitly.
+    # It cannot here, because the Makefile clean-up above blanks CCOPT, which
+    # is what drops the implicit link flags.
+    #
+    # Asking for it explicitly. Deliberately gcc14's own unwinder rather than
+    # Tiger's /usr/lib/libgcc_s.10.4.dylib, which does export these symbols:
+    # mixing a 2005 unwinder with gcc-14-generated frames is not worth the
+    # risk when the matching one is right there.
+    #
+    # It has to go in TARGET_XLIBS, NOT configure.ldflags. Putting it in
+    # LDFLAGS does reach make -- the log shows
+    # LDFLAGS="... -lgcc_eh -L/opt/local/lib -lMacportsLegacySupport" -- but
+    # src/Makefile:232 composes the link from
+    #
+    #   TARGET_ALDFLAGS= $(LDOPTIONS) $(TARGET_XLDFLAGS) ...
+    #
+    # and LDOPTIONS is a filtered subset that keeps -L and -Wl and throws the
+    # -l entries away. The libraries for the final link come from
+    # TARGET_ALIBS, which is fed by TARGET_XLIBS (src/Makefile:228, "-lm").
+    # Overriding it from the command line replaces that default outright, so
+    # -lm has to be restated here.
+    build.args-append   TARGET_XLIBS="-lm -lgcc_eh"
+
+    # INTERPRETER ONLY on this platform. With the unwinder sorted, luajit
+    # builds, installs and runs, and jit.status() even reports the JIT active
+    # with every optimisation enabled -- but the code it generates faults:
+    #
+    #   luajit -e 'local s=0 for i=1,2000000 do s=s+i end print(s)'
+    #       -> rc=138 (SIGBUS)
+    #   luajit -joff -e '...same...'
+    #       -> 2000001000000, rc=0
+    #
+    # So the interpreter is sound and the ppc JIT backend is not. That fits
+    # upstream: LuaJIT's supported-target list covers PPC for embedded and the
+    # PS3, never Darwin/macOS, and the powerpc.patch this port carries came
+    # from someone getting it to COMPILE on Leopard, not from upstream support.
+    #
+    # LUAJIT_DISABLE_JIT is upstream's own switch for exactly this, and it is
+    # what makes the port usable here: neovim wants libluajit-5.1.2.dylib and
+    # still gets it, just interpreting rather than jitting. Slower than LuaJIT
+    # on a supported host, still a fast Lua. The alternative -- neovim's
+    # -DPREFER_LUA=ON against plain Lua 5.1 -- means patching neovim to drop
+    # its hardcoded luv-luajit dependency, for no better result.
+    #
+    # Do NOT drop this without re-running the loop above. A JIT that reports
+    # itself healthy and then SIGBUSes is the worst kind of broken.
+    #
+    # XCFLAGS, not configure.cflags: putting -DLUAJIT_DISABLE_JIT in CFLAGS
+    # was silently ineffective -- the port built and installed, and
+    # jit.status() still reported the JIT on with every optimisation, and the
+    # hot loop still took SIGBUS. XCFLAGS is the variable LuaJIT reads for
+    # build-time feature switches, and it has to be right for the flag to
+    # reach the parts of the build that decide whether a JIT exists at all.
+    # LUA52COMPAT is restated because a command-line assignment replaces the
+    # Makefile's value rather than adding to it.
+    build.args-append   XCFLAGS="-DLUAJIT_ENABLE_LUA52COMPAT -DLUAJIT_DISABLE_JIT"
+}
 
 build.target        amalg
 build.args-append   Q=
