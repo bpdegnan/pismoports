@@ -11,6 +11,20 @@ TeXShop
 # matters because no LSP server is realistically runnable on a G3.
 vim
 
+# Second editor, being attempted rather than assumed. The blocker was always
+# LuaJIT, which neovim embeds as its scripting engine -- a JIT with a
+# hand-written assembler backend per architecture, and upstream LuaJIT does not
+# list Darwin/PowerPC among its supported targets. But MacPorts' luajit port
+# sets no known_fail and no supported_archs, and carries a powerpc.patch, so
+# it does not consider ppc broken. luajit's own dependencies are only gcc14,
+# libgcc and legacy-support, all of which are built -- so this is one build to
+# try, not a dependency excavation.
+#
+# If luajit will not go, neovim can be built against plain Lua 5.1 with
+# -DPREFER_LUA=ON; that needs Portfile surgery (the port hardcodes
+# luv-luajit) and gives up the JIT, but it is a supported upstream mode.
+neovim
+
 # pkill/pgrep, which Tiger does not ship. Installed on yebisu by hand; listed
 # here so regenerating the tree does not prune it back out.
 proctools
