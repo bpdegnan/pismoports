@@ -1,0 +1,41 @@
+Tiger has no F_DUPFD_CLOEXEC. It is a POSIX 2008 fcntl command that Apple
+added in 10.7; /usr/include/sys/fcntl.h here stops at F_DUPFD:
+
+    src/nvim/channel.c:550:40: error: 'F_DUPFD_CLOEXEC' undeclared
+
+legacysupport does not shim it, and it cannot simply be #defined to a value:
+the constant is interpreted by the kernel, so a 10.4 kernel handed 67 would
+return EINVAL at runtime instead of failing to compile.
+
+Doing it in two steps instead -- duplicate with F_DUPFD, then set
+close-on-exec with F_SETFD. That is not atomic, which is the whole reason
+F_DUPFD_CLOEXEC exists, but this runs once while nvim is setting up its stdio
+channel in embedded mode, before any child has been spawned or any worker
+thread started, so there is no fork that could inherit the descriptor in the
+window between the two calls.
+
+--- src/nvim/channel.c.orig
++++ src/nvim/channel.c
+@@ -547,8 +547,22 @@
+     // Redirect stdout/stdin (the UI channel) to stderr. Use fnctl(F_DUPFD_CLOEXEC) instead of dup()
+     // to prevent child processes from inheriting the file descriptors, which are used by UIs to
+     // detect when Nvim exits.
++#ifdef F_DUPFD_CLOEXEC
+     stdin_dup_fd = fcntl(STDIN_FILENO, F_DUPFD_CLOEXEC, STDERR_FILENO + 1);
+     stdout_dup_fd = fcntl(STDOUT_FILENO, F_DUPFD_CLOEXEC, STDERR_FILENO + 1);
++#else
++    // Mac OS X 10.4 predates F_DUPFD_CLOEXEC (added in 10.7). Duplicate the
++    // descriptor and mark it close-on-exec separately; safe here because
++    // nothing has forked yet at this point in startup.
++    stdin_dup_fd = fcntl(STDIN_FILENO, F_DUPFD, STDERR_FILENO + 1);
++    if (stdin_dup_fd != -1) {
++      (void)fcntl(stdin_dup_fd, F_SETFD, FD_CLOEXEC);
++    }
++    stdout_dup_fd = fcntl(STDOUT_FILENO, F_DUPFD, STDERR_FILENO + 1);
++    if (stdout_dup_fd != -1) {
++      (void)fcntl(stdout_dup_fd, F_SETFD, FD_CLOEXEC);
++    }
++#endif
+     dup2(STDERR_FILENO, STDOUT_FILENO);
+     dup2(STDERR_FILENO, STDIN_FILENO);
+   }

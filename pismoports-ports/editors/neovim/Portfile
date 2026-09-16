@@ -23,6 +23,11 @@ platforms               {darwin >= 15}
 # arrives marked known_fail on Tiger. That is a support declaration, not a
 # recorded failure; install with --allow-failing.
 compiler.c_standard     2011
+
+platform darwin 8 {
+    # F_DUPFD_CLOEXEC is 10.7+; see the patch for why a #define will not do.
+    patchfiles-append   patch-tiger-no-F_DUPFD_CLOEXEC.diff
+}
 maintainers             {l2dy @l2dy} \
                         {judaew @judaew} \
                         openmaintainer
