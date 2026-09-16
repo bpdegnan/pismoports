@@ -3,9 +3,23 @@
 PortSystem          1.0
 PortGroup           github 1.0
 PortGroup           cmake 1.1
+# src/dns.c uses AI_NUMERICSERV, a getaddrinfo flag Apple added in 10.6:
+#
+#   src/dns.c:174: error: 'AI_NUMERICSERV' undeclared (first use in this function)
+#
+# Tiger's /usr/include/netdb.h stops at AI_NUMERICHOST. legacysupport already
+# carries the shim -- its netdb.h has
+#   #define AI_NUMERICSERV 0x00001000 /* prevent service name resolution */
+# guarded by #ifndef -- so pulling the PortGroup in is enough, and is better
+# than hardcoding the constant in cflags where a wrong value would silently
+# change getaddrinfo behaviour rather than fail to compile.
+PortGroup           legacysupport 1.1
+
+# AI_NUMERICSERV arrived in 10.6, so anything older needs the shim.
+legacysupport.newest_darwin_requires_legacy 9
 
 github.setup        luvit luv 1.50.0-1
-revision            0
+revision            1
 categories          devel
 license             Apache-2
 maintainers         {l2dy @l2dy} openmaintainer

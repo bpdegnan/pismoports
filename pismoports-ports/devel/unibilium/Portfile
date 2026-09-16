@@ -5,7 +5,7 @@ PortGroup github 1.0
 
 github.setup        neovim unibilium 2.1.2 v
 github.tarball_from archive
-revision            1
+revision            2
 categories          devel
 maintainers         nomaintainer
 license             LGPL-3+
@@ -49,7 +49,11 @@ platform darwin 8 {
    # the failure is purely in the test tree. Rewriting the target rather than
    # naming the pieces explicitly keeps $(LIBRARY) expanding as upstream
    # intends.
-   post-patch {
+   #
+   # post-CONFIGURE, not post-patch: this port sets use_autoreconf, so at
+   # patch time there is no Makefile yet and the reinplace dies with
+   # "couldn't read file .../Makefile: no such file or directory".
+   post-configure {
        reinplace {s|^all: .*|all: $(LIBRARY) build-man build-tools|} \
            ${worksrcpath}/Makefile
    }
