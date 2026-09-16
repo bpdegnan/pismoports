@@ -5,7 +5,7 @@ PortGroup github 1.0
 
 github.setup        neovim unibilium 2.1.2 v
 github.tarball_from archive
-revision            0
+revision            1
 categories          devel
 maintainers         nomaintainer
 license             LGPL-3+
@@ -33,6 +33,29 @@ test.run            yes
 platform darwin 8 {
    #added for 10.4 support
    depends_build-append port:ncurses
+
+   # Build the library, man pages and tools, but NOT the test fixtures.
+   #
+   # Makefile:69 is "all: $(LIBRARY) build-man build-tools build-test", and
+   # build-test generates C source from live terminfo entries:
+   #
+   #   tools/gen-static-test screen-256color > t/static_screen-256color.c
+   #   unibi_from_term("screen-256color"): Invalid argument
+   #   make: *** [t/static_screen-256color.c] Error 1
+   #
+   # screen-256color postdates Tiger and is in neither /usr/share/terminfo nor
+   # MacPorts' own terminfo, so the fixture cannot be generated. Nothing ships
+   # from it -- libunibilium.4.dylib links successfully before this point, and
+   # the failure is purely in the test tree. Rewriting the target rather than
+   # naming the pieces explicitly keeps $(LIBRARY) expanding as upstream
+   # intends.
+   post-patch {
+       reinplace {s|^all: .*|all: $(LIBRARY) build-man build-tools|} \
+           ${worksrcpath}/Makefile
+   }
+
+   # ...and with no test fixtures there is nothing for the test phase to run.
+   test.run             no
    depends_lib-append  port:ncurses
    build.env-append TERMINFO_DIRS=${prefix}/share/terminfo TERMINFO=${prefix}/share/terminfo
 
