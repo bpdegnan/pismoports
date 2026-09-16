@@ -23,11 +23,6 @@ platforms               {darwin >= 15}
 # arrives marked known_fail on Tiger. That is a support declaration, not a
 # recorded failure; install with --allow-failing.
 compiler.c_standard     2011
-
-platform darwin 8 {
-    # F_DUPFD_CLOEXEC is 10.7+; see the patch for why a #define will not do.
-    patchfiles-append   patch-tiger-no-F_DUPFD_CLOEXEC.diff
-}
 maintainers             {l2dy @l2dy} \
                         {judaew @judaew} \
                         openmaintainer
@@ -62,6 +57,18 @@ patch.pre_args-replace  -p0 -p1
 # Building parsers is normally an extra step, see https://github.com/neovim/neovim/issues/29042
 patchfiles              0001-build-and-install-tree-sitter-parsers.patch \
                         0002-include-lua51-headers-to-build-properly.patch
+
+platform darwin 8 {
+    # F_DUPFD_CLOEXEC is 10.7+; see the patch for why a #define will not do.
+    #
+    # This has to sit AFTER the plain `patchfiles` assignment above, not with
+    # the other darwin 8 settings near the top of the file: that assignment
+    # replaces the list rather than adding to it, so an earlier
+    # patchfiles-append is silently discarded. The symptom is the patch never
+    # being applied and the build failing on the very error it fixes, with
+    # nothing in the patch phase to say why.
+    patchfiles-append   patch-tiger-no-F_DUPFD_CLOEXEC.diff
+}
 
 post-patch {
     reinplace "s|@PREFIX@|${prefix}|g" ${worksrcpath}/CMakeLists.txt

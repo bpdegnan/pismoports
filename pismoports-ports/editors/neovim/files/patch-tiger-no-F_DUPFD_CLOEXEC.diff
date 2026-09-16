@@ -14,8 +14,11 @@ channel in embedded mode, before any child has been spawned or any worker
 thread started, so there is no fork that could inherit the descriptor in the
 window between the two calls.
 
---- src/nvim/channel.c.orig
-+++ src/nvim/channel.c
+Paths are a/ b/ prefixed: this port does patch.pre_args-replace -p0 -p1, so
+patches are applied with -p1 and one leading component is stripped.
+
+--- a/src/nvim/channel.c
++++ b/src/nvim/channel.c
 @@ -547,8 +547,22 @@
      // Redirect stdout/stdin (the UI channel) to stderr. Use fnctl(F_DUPFD_CLOEXEC) instead of dup()
      // to prevent child processes from inheriting the file descriptors, which are used by UIs to
