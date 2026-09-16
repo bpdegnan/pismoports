@@ -7,6 +7,22 @@ PortGroup               cmake 1.1
 name                    neovim
 categories              editors
 platforms               {darwin >= 15}
+
+# The bundled tree-sitter grammars need a C11 compiler. Their generated
+# parser.h declares the same typedef twice:
+#
+#   tree_sitter/parser.h:26: error: redefinition of typedef 'TSLanguageMetadata'
+#   tree_sitter/parser.h:21: error: previous declaration of 'TSLanguageMetadata'
+#
+# which C11 explicitly permits and C89/C99 do not. MacPorts otherwise selects
+# apple-gcc-4.2 here, which defaults to gnu89 and cannot be talked into C11 at
+# all, so asking for the standard is what moves the build onto gcc14 -- rather
+# than patching a header that is generated, and regenerated, per grammar.
+#
+# Note the platforms line above says darwin >= 15, which is why this port
+# arrives marked known_fail on Tiger. That is a support declaration, not a
+# recorded failure; install with --allow-failing.
+compiler.c_standard     2011
 maintainers             {l2dy @l2dy} \
                         {judaew @judaew} \
                         openmaintainer

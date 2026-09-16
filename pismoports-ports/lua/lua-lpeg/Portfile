@@ -6,7 +6,7 @@ PortGroup           luarocks_org 1.0
 name                lua-lpeg
 epoch               1
 version             1.1.0
-revision            0
+revision            1
 luarocks.rock       lpeg-${version}-1.src.rock
 license             MIT
 maintainers         {judaew @judaew} openmaintainer
@@ -22,6 +22,23 @@ luarocks.worksrcdir lpeg-${version}
 luarocks.uploader   gvvaughan
 
 patchfiles          patch-makefile-add-dylib.diff
+
+platform darwin 8 {
+    # lpeg's makefile hands the compiler -Wc++-compat, which arrived in GCC
+    # 4.3. The build here uses apple-gcc-4.2, so:
+    #
+    #   cc1: error: unrecognized command line option "-Wc++-compat"
+    #   make: *** [lpvm.o] Error 1
+    #
+    # It is a warning switch and nothing else -- it asks the C compiler to
+    # flag constructs a C++ compiler would reject. Dropping it changes no
+    # generated code. Preferred over forcing gcc14 for this one small C
+    # module, which would compile it with a different toolchain from the lua51
+    # it loads into for no benefit.
+    post-patch {
+        reinplace {s|-Wc++-compat||g} ${worksrcpath}/makefile
+    }
+}
 
 post-build {
     system -W ${worksrcpath} "make PREFIX=${prefix} LUADIR=${prefix}/include/lua${lua.version} lpeg.dylib"
