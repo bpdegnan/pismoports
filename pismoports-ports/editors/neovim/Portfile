@@ -3,6 +3,18 @@
 PortSystem              1.0
 PortGroup               github 1.0
 PortGroup               cmake 1.1
+# src/nvim/event/socket.c uses AI_NUMERICSERV, a getaddrinfo flag Apple added
+# in 10.6:
+#
+#   src/nvim/event/socket.c:225:49: error: 'AI_NUMERICSERV' undeclared
+#
+# Tiger's /usr/include/netdb.h stops at AI_NUMERICHOST. legacysupport's netdb.h
+# supplies it under #ifndef, so the PortGroup is enough. Same fix the luv port
+# needed for the identical constant in its own dns.c.
+PortGroup               legacysupport 1.1
+
+# AI_NUMERICSERV arrived in 10.6, so anything older wants the shim.
+legacysupport.newest_darwin_requires_legacy 9
 
 name                    neovim
 categories              editors
