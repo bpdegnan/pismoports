@@ -16,6 +16,26 @@ PortGroup               legacysupport 1.1
 # AI_NUMERICSERV arrived in 10.6, so anything older wants the shim.
 legacysupport.newest_darwin_requires_legacy 9
 
+platform darwin 8 {
+    # No LTO. Every object compiles, then the final link of bin/nvim dies:
+    #
+    #   [100%] Linking C executable ../../bin/nvim
+    #   collect2: error: ld returned 1 exit status
+    #
+    # with -flto=auto on the link line and nothing else to show for it -- ld
+    # emits no symbol list, which is itself the tell. Link-time optimisation
+    # needs the linker to understand GCC's intermediate objects, via a plugin
+    # Tiger's ld64 does not have. CMake enables it for Release builds after
+    # its own LTO test passes, and that test only checks the compiler accepts
+    # the flag, not that the linker can consume the result.
+    #
+    # Turning it off costs some optimisation on a machine where nvim is
+    # interpreting Lua anyway; the JIT is disabled on this platform.
+    configure.args-append   -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF
+    configure.cflags-append -fno-lto
+    configure.ldflags-append -fno-lto
+}
+
 name                    neovim
 categories              editors
 platforms               {darwin >= 15}
