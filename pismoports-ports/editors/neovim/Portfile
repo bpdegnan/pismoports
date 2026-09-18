@@ -17,23 +17,36 @@ PortGroup               legacysupport 1.1
 legacysupport.newest_darwin_requires_legacy 9
 
 platform darwin 8 {
-    # No LTO. Every object compiles, then the final link of bin/nvim dies:
+    # Every object compiles and then the final link of bin/nvim dies. MacPorts'
+    # log shows only
     #
     #   [100%] Linking C executable ../../bin/nvim
     #   collect2: error: ld returned 1 exit status
     #
-    # with -flto=auto on the link line and nothing else to show for it -- ld
-    # emits no symbol list, which is itself the tell. Link-time optimisation
-    # needs the linker to understand GCC's intermediate objects, via a plugin
-    # Tiger's ld64 does not have. CMake enables it for Release builds after
-    # its own LTO test passes, and that test only checks the compiler accepts
-    # the flag, not that the linker can consume the result.
+    # with no symbol list, because collect2 swallows ld's message. Re-running
+    # the link by hand -- `sh CMakeFiles/nvim_bin.dir/link.txt` in the build
+    # tree -- prints the actual cause:
     #
-    # Turning it off costs some optimisation on a machine where nvim is
-    # interpreting Lua anyway; the JIT is disabled on this platform.
-    configure.args-append   -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF
-    configure.cflags-append -fno-lto
-    configure.ldflags-append -fno-lto
+    #   ld: unknown option: -export_dynamic
+    #
+    # src/nvim/CMakeLists.txt adds "-Wl,-export_dynamic" in its Darwin branch
+    # for neovim issue 25295, so that Lua modules can resolve symbols back out
+    # of the nvim binary. Tiger's ld64 predates that option entirely and
+    # refuses the whole link.
+    #
+    # Dropping it. The cost is that a Lua C module which expects to find nvim's
+    # own symbols at load time may not; the modules this port actually links
+    # (luv, lpeg, unibilium, utf8proc) are real dylibs with their own exports
+    # and do not rely on it.
+    #
+    # NOTE: an earlier attempt blamed -flto=auto and disabled LTO. That was
+    # wrong -- the flag order on the link line was -fno-lto (5), -flto=auto
+    # (11), -fno-lto (18), so LTO was already off via the last occurrence and
+    # the link failed regardless. Do not re-add the LTO workaround.
+    post-patch {
+        reinplace {/-Wl,-export_dynamic/d} \
+            ${worksrcpath}/src/nvim/CMakeLists.txt
+    }
 }
 
 name                    neovim
