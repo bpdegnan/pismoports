@@ -43,8 +43,21 @@ platform darwin 8 {
     # wrong -- the flag order on the link line was -fno-lto (5), -flto=auto
     # (11), -fno-lto (18), so LTO was already off via the last occurrence and
     # the link failed regardless. Do not re-add the LTO workaround.
+    # Second link failure, found the same way:
+    #
+    #   ld: library not found for -lutil
+    #
+    # from src/nvim/CMakeLists.txt:149, target_link_libraries(main_lib
+    # INTERFACE util). On Linux libutil holds openpty/forkpty/login_tty. On
+    # Darwin they are in libSystem, and modern macOS additionally ships a stub
+    # /usr/lib/libutil.dylib so the -lutil works by accident. Tiger has no
+    # libutil at all -- but it does export all three from libSystem
+    # (nm -g /usr/lib/libSystem.B.dylib matches _forkpty, _openpty and
+    # _login_tty), so dropping the link loses nothing.
     post-patch {
         reinplace {/-Wl,-export_dynamic/d} \
+            ${worksrcpath}/src/nvim/CMakeLists.txt
+        reinplace {/target_link_libraries(main_lib INTERFACE util)/d} \
             ${worksrcpath}/src/nvim/CMakeLists.txt
     }
 }
