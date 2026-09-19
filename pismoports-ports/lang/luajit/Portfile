@@ -11,7 +11,7 @@ PortGroup           muniversal 1.1
 set branch          2.1
 set version_date    2025-01-13T15:22:22Z
 github.setup        LuaJIT LuaJIT a4f56a459a588ae768801074b46ba0adcfb49eb1
-revision            2
+revision            4
 checksums           rmd160  a01e4fb5337b3dbb1e5eb544fc43dd8cfda9c610 \
                     sha256  b4120332a4191db9c9da2d81f9f11f0d4504fc4cff2dea0f642d3d8f1fcebd0e \
                     size    1082930
@@ -148,6 +148,51 @@ build.args-append   Q=
 post-destroot {
     xinstall -m 755 -d ${destroot}${prefix}/share/doc
     copy ${worksrcpath}/doc/ ${destroot}${prefix}/share/doc/${name}
+
+    # Fix the dylib's install_name. As built it comes out as
+    #
+    #   otool -D libluajit-5.1.2.dylib  ->  //libluajit-5.1.2.dylib
+    #
+    # with no directory, so nothing that links luajit can find it at runtime:
+    #
+    #   dyld: Library not loaded: //libluajit-5.1.2.dylib
+    #
+    # which is what stopped neovim -- it compiled and LINKED fine, then died
+    # in the post-build step that runs the fresh binary to generate help tags.
+    #
+    # src/Makefile builds the name as
+    #   TARGET_LIBPATH  = $(or $(PREFIX),/usr/local)/$(or $(MULTILIB),lib)
+    #   TARGET_DYLIBNAME= libluajit-$(ABIVER).$(MAJVER).dylib
+    #   TARGET_DYLIBPATH= $(TARGET_LIBPATH)/$(TARGET_DYLIBNAME)
+    # and passes it via -install_name. TARGET_LIBPATH evaluated to bare "/"
+    # here -- both halves empty -- even though PREFIX=/opt/local is on the make
+    # command line, so one of the other command-line overrides this Portfile
+    # makes is eating it. Rather than guess which, set the id afterwards, where
+    # the result is directly checkable with otool -D.
+    #
+    # The id must be the SHORT name, not the file's own name. make install lays
+    # the library down as libluajit-$(ABIVER).$(VERSION).dylib -- here
+    # libluajit-5.1.2.1.1736781742.dylib -- and hangs two symlinks off it. That
+    # real filename carries this port's version, which is a git commit date, so
+    # using it as the install_name would bake the build stamp into every
+    # consumer and break neovim on any luajit revbump that moves the date.
+    # TARGET_DYLIBNAME is the stable ABI name and is what upstream intends.
+    set dylibname   libluajit-5.1.2.dylib
+    set reallib     {}
+    foreach lib [glob -nocomplain ${destroot}${prefix}/lib/libluajit-*.dylib] {
+        if {[file type ${lib}] ne "link"} {
+            set reallib ${lib}
+        }
+    }
+    # Fail loudly rather than shipping a library nothing can load: a silent
+    # bad install_name is exactly the failure this block exists to fix.
+    if {${reallib} eq {}} {
+        return -code error "no luajit dylib in destroot"
+    }
+    if {![file exists ${destroot}${prefix}/lib/${dylibname}]} {
+        return -code error "expected ${dylibname} symlink; upstream naming changed"
+    }
+    system "install_name_tool -id ${prefix}/lib/${dylibname} ${reallib}"
 }
 
 livecheck.type      regex
