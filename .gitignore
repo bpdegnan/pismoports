@@ -1,7 +1,17 @@
 
 [Ww]ork
 /dist/
-/base/
+# base/config holds the two .conf.default files the PismoPorts base is built
+# with, and those are worth versioning: archive_sites.conf.default in
+# particular took days to get right and fails SILENTLY when wrong -- a missing
+# field is reported only by ui_warn, so the site is dropped and ports compile
+# from source with no visible error.
+#
+# The rest of base/ stays out. Excluding /base/ outright will not work: git
+# does not descend into an excluded directory, so a later !/base/config/ is
+# never even considered. Exclude the CONTENTS and re-admit the one subdir.
+/base/*
+!/base/config/
 /toolchain/
 /tools/
 /notes.txt

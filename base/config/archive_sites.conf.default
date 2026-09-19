@@ -1,0 +1,45 @@
+# PismoPorts archive sites.
+#
+# Two stanzas, and BOTH are required. Getting this wrong fails silently --
+# MacPorts prints nothing at normal verbosity, quietly ignores the site, and
+# compiles from source instead. That cost days of this project: the build farm
+# recompiled gettext on six builders, harfbuzz for thirty hours and cmake on
+# four builders for six hours each, every one of them with a byte-identical
+# archive already sitting on the host.
+#
+# ---------------------------------------------------------------------------
+# 1. The bare "macports_archives" entry.
+#
+# A name with no urls SHADOWS the same-named site that the ports tree defines
+# in port1.0/fetch/archive_sites.tcl. Without it, every archivefetch goes to
+# packages.macports.org first, which has nothing built for darwin 8 powerpc,
+# so each lookup costs a 30-second timeout before falling back to a source
+# build. Do not add urls to this entry -- that re-enables the default.
+name                    macports_archives
+
+# ---------------------------------------------------------------------------
+# 2. Our own site, with EVERY field populated.
+#
+# portarchivefetch::filter_sites drops any site missing archive_type,
+# archive_prefix, archive_frameworks_dir, archive_applications_dir,
+# archive_cxx_stdlib or archive_delete_la_files. It says so only via ui_warn,
+# which is invisible unless you run with -d. An entry with just name and urls
+# looks perfectly reasonable and is never used.
+#
+# The three paths are compared against this installation's own values after
+# realpath, so they must match exactly. On darwin 8 the defaults are
+# cxx_stdlib libstdc++ (libc++ starts at darwin 10) and delete_la_files no
+# (la-file deletion starts at darwin 13).
+#
+# Archives here are signed with the PismoPorts key; the matching public key
+# must be listed in pubkeys.conf or every fetch is discarded after download.
+# There is no way to skip that check -- ${portdbpath}/incoming/verified is the
+# only path that bypasses signature verification, which is what its name means.
+name                    pismoports
+urls                    https://degnanresearch.com/pismoports/
+type                    tbz2
+prefix                  /opt/local
+applications_dir        /Applications/MacPorts
+frameworks_dir          /opt/local/Library/Frameworks
+cxx_stdlib              libstdc++
+delete_la_files         no

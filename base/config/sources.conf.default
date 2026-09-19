@@ -1,0 +1,9 @@
+# PismoPorts ports tree.
+#
+# Local file:// source, never rsync. The tree is pinned to a snapshot taken
+# just before upstream dropped Tiger, plus this project's own G3 fixes; a sync
+# would pull in ports that no longer support darwin 8 and undo them.
+#
+# [default] makes this the tree PortGroups are resolved from as well as ports.
+# [nosync] stops `port sync` and `port selfupdate` touching it.
+file:///opt/local/share/pismoports/ports [default,nosync]
