@@ -1,0 +1,13 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem          1.0
+PortGroup           aspelldict 1.0
+
+aspelldict.setup    en 2020.12.07-0 {English} 6
+revision            0
+license             Permissive
+maintainers         nomaintainer
+
+checksums           rmd160  037e0454216289a2afd1c04037772e45056ae6f5 \
+                    sha256  4c8f734a28a088b88bb6481fcf972d0b2c3dc8da944f7673283ce487eac49fb3 \
+                    size    188972

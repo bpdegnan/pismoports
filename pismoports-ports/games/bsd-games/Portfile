@@ -4,7 +4,7 @@ PortSystem          1.0
 
 name                bsd-games
 version             3.3
-revision            1
+revision            2
 categories          games
 license             BSD
 maintainers         {makr @mohd-akram} openmaintainer
@@ -34,7 +34,23 @@ post-patch {
 
 configure.args      --localstatedir=${prefix}/var/lib
 
-destroot.args       INSTALL_SCORE=:
+# Config.mk builds every object under
+#
+#   builddir := ${TMPDIR}/make/${name}
+#
+# and then symlinks .o to it. MacPorts scrubs TMPDIR out of the build
+# environment here, so builddir collapses to /make/bsd-games, the mkdir -p for
+# it fails, the .o symlink is never created, and the very first object
+# directory dies with
+#
+#   mkdir: .o: No such file or directory
+#   make: *** [.o/adventure/.d] Error 1
+#
+# Point builddir somewhere real instead. Upstream does not hit this because
+# launchd sets a per-user TMPDIR on the macOS versions they build on.
+set objdir          ${workpath}/objdir
+build.args-append   builddir=${objdir}
+destroot.args       INSTALL_SCORE=: builddir=${objdir}
 destroot.keepdirs   ${destroot}${prefix}/var/lib/bsdgames
 
 post-activate {

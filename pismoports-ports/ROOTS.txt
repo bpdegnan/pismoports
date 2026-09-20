@@ -33,6 +33,35 @@ proctools
 # which the tree already carries.
 bsd-games
 
+# Runs the latex -> bibtex -> latex -> latex cycle until the references stop
+# moving. noarch, use_configure no, and its only runtime dep is texlive-latex,
+# so it costs nothing and saves four slow passes by hand on a G3.
+latexmk
+
+# Spell-checking prose. Needed no new dependencies at all.
+aspell
+aspell-dict-en
+
+# Long jobs on this machine are measured in hours over ssh, and a dropped
+# connection currently kills them. Only new dependency is libevent.
+tmux
+
+# Plotting, mainly to get ngspice results into papers. Our copy of the Portfile
+# differs from upstream in two ways, both recorded in the Portfile itself:
+# gd2/webp/libcaca dropped (gd2 pulls libheif), and the Qt terminal removed
+# from default_variants on darwin 8, where upstream's `os.major < 19` test
+# would otherwise select Qt 4.
+#
+# NOTE ON DISTRIBUTION: gnuplot is license Restrictive, and MacPorts does not
+# ship binaries for it for that reason. Keep its archive OUT of the public
+# mirror at degnanresearch.com and seed it to yebisu directly instead.
+gnuplot
+
+# Tiger's own ssh is OpenSSH_5.1p1 with OpenSSL 0.9.7l, which cannot negotiate
+# with GitHub or any current server, so git-over-ssh remotes fail. Needed no
+# new dependencies.
+openssh
+
 # bsdowl was asked for alongside bsd-games and is PARKED, not rejected. It
 # needs four ports this tree does not have:
 #
