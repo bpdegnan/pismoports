@@ -1,0 +1,19 @@
+--- src/maths/KLU/klu_version.h
++++ src/maths/KLU/klu_version.h
+@@ -338,4 +338,16 @@
+ typedef Double_Complex Unit ;
+ #define Entry Double_Complex
++
++/* Tiger's <architecture/ppc/math.h> declares, at lines 689-690,
++ *     typedef struct __complex_s { double Real; double Imag; } __complex_t;
++ * and the two #defines just below rewrite BOTH of those member names to
++ * "component", so the struct comes out with the same member twice:
++ *     klu_version.h:341:14: error: duplicate member 'component'
++ * Pull math.h in here, while Real and Imag are still ordinary identifiers;
++ * its include guard makes the later include a no-op. Only the COMPLEX branch
++ * defines these as object-like macros, and no SDK after Tiger names struct
++ * members Real/Imag, so this collision is specific to darwin 8 ppc.
++ */
++#include <math.h>
+ #define Real component [0]
+ #define Imag component [1]

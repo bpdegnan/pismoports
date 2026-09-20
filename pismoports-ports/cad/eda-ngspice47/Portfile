@@ -6,7 +6,7 @@ PortGroup           select 1.0
 
 name                eda-ngspice47
 version             47
-revision            1
+revision            4
 
 categories          cad science
 license             BSD
@@ -45,11 +45,40 @@ checksums           rmd160  cb8ec53bfd2843677816e2834b71153c0bb15f64 \
 compiler.c_standard   2011
 compiler.cxx_standard 2011
 
+platform darwin 8 {
+    # The final link of the ngspice binary fails with
+    #
+    #   Undefined symbols:
+    #     "__Unwind_Resume", referenced from:
+    #         _HICUMload in libhicum2.a(hicumL2.o)
+    #
+    # gcc14 keeps the DWARF unwinder in a SEPARATE library here:
+    # libgcc_s.1.1.dylib does not export _Unwind_*, only libgcc_eh does. The
+    # HICUM2 model is the one object that needs it, and the driver does not
+    # pull it in on its own. Exactly the same gap this tree hit in lang/luajit.
+    #
+    # Verified by re-running the failed link by hand with -lgcc_eh appended:
+    # rc=0 and a 5.6 MB "Mach-O executable ppc", rather than assuming it.
+    #
+    # LDFLAGS is the right place for it here -- unlike luajit, whose Makefile
+    # filtered -l entries out of the link, this is plain autotools/libtool and
+    # MacPorts' own -Wl,-headerpad_max_install_names already arrives this way.
+    configure.ldflags-append    -lgcc_eh
+}
+
 # Same two patches as the stock port (targets verified still present in ${version}):
 # don't pass -static to the macOS linker (trac 70175), and guard the 10.8 MACH
 # task-info renames for old SDKs.
 patchfiles-append   patch-fix-linking.diff \
                     patch-ngspice-older-MACH-defines.diff
+
+# KLU's complex build collides with Tiger's ppc math.h. See the patch for the
+# detail; keep this append AFTER any plain `patchfiles` assignment, or it is
+# silently discarded and the build fails as though the patch did not exist.
+platform darwin 8 {
+    patchfiles-append   patch-tiger-klu-math-Real-Imag.diff \
+                        patch-tiger-mach-vm-stats64.diff
+}
 
 set edaprefix       ${prefix}/libexec/eda
 set myprefix        ${edaprefix}/ngspice${version}
