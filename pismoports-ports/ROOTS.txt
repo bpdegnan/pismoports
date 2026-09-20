@@ -29,6 +29,18 @@ neovim
 # here so regenerating the tree does not prune it back out.
 proctools
 
+# Tiger ships zsh 4.2 from 2004. This is 5.9, for a usable interactive shell.
+# Deps (gdbm, libiconv, ncurses, pcre) were all already in the tree.
+#
+# htop was asked for at the same time and is deliberately NOT here. Its Darwin
+# backend is built on libproc -- darwin/DarwinProcess.c and
+# darwin/DarwinProcessTable.c both #include <libproc.h> and call proc_pidinfo()
+# -- and that API arrives in 10.5. Tiger has neither /usr/include/libproc.h nor
+# sys/proc_info.h, and legacysupport does not provide them. Supporting it means
+# writing a new process-enumeration backend against sysctl(KERN_PROC), which is
+# a port of htop rather than a patch to it.
+zsh
+
 # Circuit simulator, so paper work can be checked on the Pismo. These come
 # from bpdegnan/macportseda, NOT from macports-ports -- eda-ngspice47 installs
 # into its own prefix (libexec/eda/ngspice47) and is reached via `port select`.

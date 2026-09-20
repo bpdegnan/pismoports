@@ -6,7 +6,7 @@ PortGroup           select 1.0
 
 name                eda-ngspice47
 version             47
-revision            4
+revision            5
 
 categories          cad science
 license             BSD
@@ -133,12 +133,33 @@ build.args          VERBOSE=1
 # the XSPICE codemodels RELATIVE to itself; the binary build installs them to
 # ${myprefix}/lib/ngspice and the dylib lands in ${myprefix}/lib, so the same
 # relative arrangement the previous eda-ngspice-lib subport relied on is kept.
+# This hand-rolled configure must be given the SAME toolchain MacPorts worked
+# out for the build-bin run above. It used to pass only CC, CPPFLAGS and
+# LDFLAGS, which left the C++ compiler and every optimisation/arch flag at
+# autoconf's defaults:
+#
+#   build-bin/.../hicum2/Makefile:  CXX = /opt/local/bin/g++-mp-14
+#                                   CXXFLAGS = -pipe -Os ... -arch ppc
+#   build-lib/.../hicum2/Makefile:  CXX = g++
+#                                   CXXFLAGS = -g -O2
+#
+# On darwin 8 that bare g++ is Tiger's gcc 4.0, and the HICUM2 model is C++:
+#
+#   cc1plus: error: unrecognized command line option "-std=c++11"
+#
+# compiler.cxx_standard above only governs the compiler MacPorts SELECTS; it
+# cannot reach a configure this Portfile invokes itself. Everywhere else the
+# mismatch would just mean an unoptimised, wrong-arch library rather than a
+# hard error, so it went unnoticed.
 post-build {
     set ldir ${workpath}/build-lib
     file mkdir ${ldir}
     system -W ${ldir} "CC=${configure.cc} \
-        CPPFLAGS='-I${prefix}/include -I${prefix}/include/freetype2' \
-        LDFLAGS='-L${prefix}/lib' \
+        CXX=${configure.cxx} \
+        CFLAGS='${configure.cflags} ${configure.cc_archflags}' \
+        CXXFLAGS='${configure.cxxflags} ${configure.cxx_archflags}' \
+        CPPFLAGS='${configure.cppflags} -I${prefix}/include/freetype2' \
+        LDFLAGS='${configure.ldflags} ${configure.ld_archflags}' \
         ${worksrcpath}/configure --prefix=${myprefix} \
             --enable-cider --enable-xspice --enable-pss --enable-relpath \
             --disable-openmp --disable-silent-rules \
