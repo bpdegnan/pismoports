@@ -1,0 +1,46 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem          1.0
+PortGroup           texlive 1.0
+
+name                texlive-latex-extra
+version             74512
+revision            0
+
+categories          tex
+maintainers         {dports @drkp}
+license             Copyleft Permissive
+description         TeX Live: LaTeX additional packages
+long_description    A very large collection of add-on packages for LaTeX.
+
+checksums           texlive-latex-extra-74512-run.tar.xz \
+                    rmd160  264b963e371d7d621c824b439b11e4bf6e477c10 \
+                    sha256  862fc42d04cccaadf72f8d1bdaf2633fa5d23146852fc85986d94baf91b8ff71 \
+                    size    30238964 \
+                    texlive-latex-extra-74512-doc.tar.xz \
+                    rmd160  6715ee3f3f9e85fe4bc5c18c064531b283067f8f \
+                    sha256  a07a30bfac2a112198c4c5cf4231a82c8dc1f477df428c38180269fee1a112b7 \
+                    size    767315100 \
+                    texlive-latex-extra-74512-src.tar.xz \
+                    rmd160  0d8998471044595e04c5f10c927f37e62e3eccda \
+                    sha256  e7cb0a59eb5659b5920cfe9dcdfe361bf62b63e141e8aa3b6978a51fefa07993 \
+                    size    20308036
+
+depends_lib         port:texlive-latex-recommended port:texlive-pictures
+
+texlive.formats      \
+    {1 dvilualatex-dev luatex language.dat,language.dat.lua {dvilualatex.ini}} \
+    {1 latex-dev pdftex language.dat {-translate-file=cp227.tcx *latex.ini}} \
+    {1 lualatex-dev luahbtex language.dat,language.dat.lua {lualatex.ini}} \
+    {1 pdflatex-dev pdftex language.dat {-translate-file=cp227.tcx *pdflatex.ini}}
+
+texlive.maps      \
+    {Map epiolmec.map} \
+    {MixedMap esint.map} \
+    {Map mathalpha.map} \
+    {Map scanpages.map}
+
+texlive.binaries    authorindex bookshelf-listallfonts bookshelf-mkfontsel dvilualatex-dev exceltex hyperxmp-add-bytecount l3build latex-dev latexminted lualatex-dev makedtx makeglossaries makeglossaries-lite markdown2tex pagelayoutapi pdfannotextractor pdflatex-dev perltex pygmentex splitindex svn-multi textestvis typog-grep vpe webquiz wordcount yplan
+
+
+texlive.texmfport

@@ -1,0 +1,35 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem          1.0
+PortGroup           texlive 1.0
+
+name                texlive-publishers
+version             74512
+revision            0
+
+categories          tex
+maintainers         {dports @drkp}
+license             Copyleft Permissive
+description         TeX Live: Publisher styles, theses, etc.
+long_description    Publisher styles, theses, etc.
+
+checksums           texlive-publishers-74512-run.tar.xz \
+                    rmd160  7c82f384198aa01de5c0e13a4b7acef525c53cc2 \
+                    sha256  5ee8dd49eeb2f969f677802ca43f8d0b939dd8af7accf7bc5d41b7300f5b9147 \
+                    size    22062996 \
+                    texlive-publishers-74512-doc.tar.xz \
+                    rmd160  45f4b40d0a29e6922dd65deeb6435ac04ed52812 \
+                    sha256  c2be89a773702c90aa05767e5bb8d2cddaa505ec7dedfcd564ebf2b27ecd6123 \
+                    size    251774416 \
+                    texlive-publishers-74512-src.tar.xz \
+                    rmd160  232b3d36232b6ddf0d37a7d584cbeeba471067b9 \
+                    sha256  3e986d7943812e3d0fccdbbc365bc4d9dee4630c2fdd6094f025f9daf27caccc \
+                    size    5922160
+
+depends_lib         port:texlive-latex
+
+texlive.binaries    aom-fullref
+
+depends_lib-append  port:texlive-latex-recommended port:texlive-latex-extra
+
+texlive.texmfport

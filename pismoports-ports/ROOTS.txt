@@ -58,3 +58,18 @@ texlive-basic
 texlive-latex
 texlive-latex-recommended
 texlive-fonts-recommended
+
+# IEEEtran, for submitting to IEEE. The class file alone is not enough -- the
+# bibliography style is what makes an IEEE paper come out right -- and
+# texlive-publishers carries the whole set:
+#
+#   tex/latex/ieeetran/IEEEtran.cls
+#   bibtex/bst/ieeetran/IEEEtran.bst        (+ N, S, SN, SA variants)
+#   bibtex/bib/ieeetran/IEEEabrv.bib, IEEEfull.bib, IEEEexample.bib
+#
+# texlive-latex-extra is a hard dependency of it, not a separate want. Both are
+# texmfport (noarch) packages -- no compiling, just repacked trees -- so they
+# cost build time only in unpacking, and install below texmf-texlive where
+# kpathsea finds them with no per-user setup.
+texlive-latex-extra
+texlive-publishers

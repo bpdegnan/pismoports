@@ -8,7 +8,7 @@ PortGroup           muniversal 1.0
 name                libjpeg-turbo
 set my_name         libjpeg-turbo
 github.setup        ${my_name} ${my_name} 3.1.0
-revision            0
+revision            1
 categories          graphics
 license             BSD
 maintainers         {larryv @larryv} {mascguy @mascguy} {jmr @jmroot}
@@ -50,10 +50,26 @@ if {${universal_possible} && [variant_isset universal]} {
     depends_build-append port:nasm
     configure.env       ASM_NASM=${prefix}/bin/nasm
 } elseif {${configure.build_arch} eq "ppc"} {
-    if {[catch {sysctl hw.vectorunit} result] || $result == 0} {
-        configure.args-append   -DWITH_SIMD=OFF
-        archive_sites
-    }
+    # Upstream makes this decision per BUILD HOST -- if sysctl says the machine
+    # has no AltiVec, it turns SIMD off and then clears archive_sites, so the
+    # result is never shared. That guard is right in general: a no-AltiVec
+    # binary handed to a G4 would be silently slower, and the reverse would
+    # crash on an illegal instruction.
+    #
+    # It is wrong for this tree, and it was expensive. Every target here is a
+    # G3 -- yebisu and all 16 builders report hw.vectorunit 0, cputype 18,
+    # machine ppc750 -- so the sysctl always said "no AltiVec", archive_sites
+    # was always cleared, and every single machine recompiled libjpeg-turbo
+    # from source. On the Pismo that is exactly the compile this whole project
+    # exists to avoid, and it is a dependency of the texlive stack.
+    #
+    # Turning SIMD off UNCONDITIONALLY on ppc is what makes sharing legitimate:
+    # the output no longer depends on which host built it, so the archive is
+    # reproducible and every consumer of this tree gets the same library. The
+    # cost is that a G4/G5 would also get the non-SIMD build. This tree targets
+    # a G3 Pismo, so that trade is deliberate -- but it is the reason to keep
+    # the -DWITH_SIMD=OFF and the archive decision welded together here.
+    configure.args-append   -DWITH_SIMD=OFF
 }
 
 variant java description {Add Java support} {
