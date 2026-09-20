@@ -29,6 +29,26 @@ neovim
 # here so regenerating the tree does not prune it back out.
 proctools
 
+# The classic BSD game collection. Only needs ncurses and pkgconfig, both of
+# which the tree already carries.
+bsd-games
+
+# bsdowl was asked for alongside bsd-games and is PARKED, not rejected. It
+# needs four ports this tree does not have:
+#
+#   bmake, ocaml, ocaml-findlib  -- plausible. MacPorts' ocaml is 4.14.1, which
+#       lists ppc and ppc64 in supported_archs and ships
+#       patch-configure-darwin-ppc.diff, so PowerPC is still handled there.
+#   GraphicsMagick              -- the problem. Its depends_lib is unconditional
+#       (not a variant) and pulls libheif, libjxl, libzip and netpbm.
+#
+# libjxl is where this would most likely die: a C++17 JPEG-XL codec depending on
+# highway, a SIMD abstraction layer with little exercise on 32-bit PowerPC.
+#
+# If revisited, check FIRST whether bsdowl genuinely needs GraphicsMagick or
+# only uses it for optional image conversion in its LaTeX rules -- patching that
+# dependency out avoids libjxl and libheif entirely and makes the rest routine.
+
 # Tiger ships zsh 4.2 from 2004. This is 5.9, for a usable interactive shell.
 # Deps (gdbm, libiconv, ncurses, pcre) were all already in the tree.
 #
