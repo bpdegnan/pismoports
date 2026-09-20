@@ -12,7 +12,7 @@ conflicts               pango-devel
 set my_name             pango
 epoch                   1
 version                 1.55.0
-revision                0
+revision                1
 checksums               rmd160  e1a860f279fb352f41b95c7987e4cab678906945 \
                         sha256  a2c17a8dc459a7267b8b167bb149d23ff473b6ff9d5972bee047807ee2220ccf \
                         size    2098352
@@ -88,6 +88,23 @@ if {${universal_possible} && [variant_isset universal]} {
 platform darwin 8 {
     # meson on Tiger cannot use rpaths, so we workaround with this to find dylib
     build.env-append    "DYLD_LIBRARY_PATH=${build_dir}/pango"
+
+    # gcc14 turns -Wincompatible-pointer-types into an error, which stops the
+    # pango-view utility:
+    #
+    #   utils/viewer-render.c:987:49: error: passing argument 3 of
+    #   'g_file_get_contents' from incompatible pointer type
+    #       size_t * {aka long unsigned int *}
+    #
+    # `len` there is a size_t and g_file_get_contents wants a gsize *. On
+    # darwin 8 ppc both are 32-bit unsigned, so the two differ only in
+    # declared type -- the store through the pointer is four bytes either way
+    # and nothing is truncated. It is worth being specific about that: the
+    # same diagnostic WOULD be a real bug on a 64-bit target, where gsize and
+    # size_t can disagree in width.
+    #
+    # Same flag, and the same reasoning, as devel/glib2 in this tree.
+    configure.cflags-append  -Wno-error=incompatible-pointer-types
 }
 
 # Fix build errors on 10.4 and 10.5, caused by outdated 'nm'

@@ -4,7 +4,7 @@ PortSystem          1.0
 
 name                bsd-games
 version             3.3
-revision            2
+revision            3
 categories          games
 license             BSD
 maintainers         {makr @mohd-akram} openmaintainer
@@ -34,20 +34,36 @@ post-patch {
 
 configure.args      --localstatedir=${prefix}/var/lib
 
-# Config.mk builds every object under
-#
-#   builddir := ${TMPDIR}/make/${name}
-#
-# and then symlinks .o to it. MacPorts scrubs TMPDIR out of the build
-# environment here, so builddir collapses to /make/bsd-games, the mkdir -p for
-# it fails, the .o symlink is never created, and the very first object
-# directory dies with
+# TWO separate reasons this fails on Tiger, both ending in the same message:
 #
 #   mkdir: .o: No such file or directory
 #   make: *** [.o/adventure/.d] Error 1
 #
-# Point builddir somewhere real instead. Upstream does not hit this because
-# launchd sets a per-user TMPDIR on the macOS versions they build on.
+# 1. Config.mk puts every object under `builddir := ${TMPDIR}/make/${name}` and
+#    symlinks .o to it. MacPorts scrubs TMPDIR from the build environment, so
+#    builddir collapsed to /make/bsd-games and could not be created. Upstream
+#    never sees this because launchd sets a per-user TMPDIR on the macOS
+#    versions they build on. Fixed by pointing builddir somewhere real.
+#
+# 2. Tiger's /usr/bin/make is GNU Make 3.80, from 2002. $(abspath) arrived in
+#    3.81, so the Makefile's
+#
+#        oname := $(notdir $(abspath $O))
+#
+#    expands to the EMPTY STRING, and the recipe that creates the .o symlink
+#
+#        @[ -h ${oname} ] || ln -sf ${builddir} ${oname}
+#
+#    becomes `[ -h ] || ...`. A one-argument [ tests that the string "-h" is
+#    non-empty, which is true, so the || never fires and the symlink is never
+#    made. Nothing reports an error -- the next rule just cannot find .o.
+#
+#    Fixing (1) alone is not enough; that was tried first and failed
+#    identically. Build with MacPorts' gmake 4.4.1 instead of patching around
+#    a 23-year-old make, since this Makefile expects a modern one throughout.
+depends_build-append    port:gmake
+build.cmd               ${prefix}/bin/gmake
+
 set objdir          ${workpath}/objdir
 build.args-append   builddir=${objdir}
 destroot.args       INSTALL_SCORE=: builddir=${objdir}
