@@ -4,7 +4,7 @@ PortSystem          1.0
 
 name                bsd-games
 version             3.3
-revision            4
+revision            5
 categories          games
 license             BSD
 maintainers         {makr @mohd-akram} openmaintainer
@@ -30,6 +30,13 @@ post-patch {
         "s|snprintf\[\[:space:]]*(ArrayBlock\[\[:space:]]*(\\(\[^)]*\\))|snprintf(\\1, ArraySize(\\1)|g" \
         {*}[glob ${worksrcpath}/*/*.c]
     reinplace "s|/var/|${prefix}/var/|g" {*}[glob ${worksrcpath}/*/*.6]
+
+    # See note 4 below. This lives INSIDE the existing post-patch on purpose:
+    # a second `post-patch` block would replace this one rather than add to
+    # it, silently dropping the two reinplaces above.
+    if {${os.platform} eq "darwin" && ${os.major} <= 8} {
+        reinplace {/#define _POSIX_C_SOURCE/d} ${worksrcpath}/common/common.h
+    }
 }
 
 configure.args      --localstatedir=${prefix}/var/lib
@@ -76,6 +83,32 @@ build.cmd               ${prefix}/bin/gmake
 #    patching the flag out of a build system that means it. Same mechanism as
 #    editors/neovim in this tree.
 compiler.c_standard     2011
+
+# 4. common/common.h opens with
+#
+#        #define _GNU_SOURCE
+#        #define _POSIX_C_SOURCE 200809L
+#
+#    and Tiger's /usr/include/signal.h guards psignal with a bare
+#
+#        #ifndef _POSIX_C_SOURCE
+#        void psignal(unsigned int, const char *);
+#
+#    so the declaration vanishes and gcc14, which makes implicit declarations
+#    an error, stops on adventure/advent.c:123.
+#
+#    Later macOS writes that guard as
+#        #if !defined(_POSIX_C_SOURCE) || defined(_DARWIN_C_SOURCE)
+#    which is why -D_DARWIN_C_SOURCE is the usual answer and why it does NOT
+#    work here -- Tiger's guard cannot be re-opened once the macro is set, so
+#    the define itself has to go. Not defining it is safe on Darwin: the
+#    default namespace is a superset of POSIX, so this exposes more, not less.
+#
+#    Verified by deleting the line in a build tree and recompiling advent.c:
+#    clean, object file produced.
+#
+#    The reinplace that does this is up in the post-patch block above, not
+#    here, because a second post-patch would have replaced that one.
 
 set objdir          ${workpath}/objdir
 build.args-append   builddir=${objdir}
