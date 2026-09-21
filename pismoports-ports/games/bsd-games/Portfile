@@ -2,9 +2,21 @@
 
 PortSystem          1.0
 
+# Tiger fix, one of five; the other four are commented further down, next to
+# the settings they justify.
+#
+#    common/util.c calls clock_gettime(CLOCK_REALTIME, ...), which macOS did
+#    not have until 10.12 -- Tiger's time.h and sys/time.h do not mention it
+#    at all, so gcc14 stops on the implicit declaration and on an undeclared
+#    CLOCK_REALTIME. legacysupport supplies both (see
+#    ${prefix}/include/LegacySupport/time.h, which defines CLOCK_REALTIME and
+#    declares clock_gettime), which is cheaper and less fragile than patching
+#    the call sites over to gettimeofday.
+PortGroup           legacysupport 1.1
+
 name                bsd-games
 version             3.3
-revision            5
+revision            6
 categories          games
 license             BSD
 maintainers         {makr @mohd-akram} openmaintainer
