@@ -4,7 +4,7 @@ PortSystem          1.0
 
 name                bsd-games
 version             3.3
-revision            3
+revision            4
 categories          games
 license             BSD
 maintainers         {makr @mohd-akram} openmaintainer
@@ -63,6 +63,19 @@ configure.args      --localstatedir=${prefix}/var/lib
 #    a 23-year-old make, since this Makefile expects a modern one throughout.
 depends_build-append    port:gmake
 build.cmd               ${prefix}/bin/gmake
+
+# 3. Config.mk asks for C11 unconditionally:
+#
+#        cflags += -std=c11 -D_APPLE_C_SOURCE -DNCURSES_WIDECHAR ${CFLAGS}
+#
+#    but MacPorts picks apple-gcc-4.2 here, which is from 2007 and answers
+#
+#        cc1: error: unrecognized command line option "-std=c11"
+#
+#    Declaring the standard is what moves the port onto gcc14, rather than
+#    patching the flag out of a build system that means it. Same mechanism as
+#    editors/neovim in this tree.
+compiler.c_standard     2011
 
 set objdir          ${workpath}/objdir
 build.args-append   builddir=${objdir}
