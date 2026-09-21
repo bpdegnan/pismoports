@@ -18,7 +18,7 @@ PortGroup           legacysupport 1.1
 
 name                bsd-games
 version             3.3
-revision            7
+revision            8
 categories          games
 license             BSD
 maintainers         {makr @mohd-akram} openmaintainer
@@ -124,24 +124,32 @@ compiler.c_standard     2011
 #    The reinplace that does this is up in the post-patch block above, not
 #    here, because a second post-patch would have replaced that one.
 
-# The legacysupport PortGroup puts -lMacportsLegacySupport into LDFLAGS, and
-# Config.mk does honour that:
-#
-#     ldflags += -L/opt/local/lib -Wl,-search_paths_first ${LDFLAGS}
-#
-# but the libraries for the final link come from `libs`, not ldflags, so the
-# header declared clock_gettime, everything compiled, and the link then failed:
+# legacysupport's HEADER fixes the compile, but its library still has to reach
+# the link, and it was not getting there:
 #
 #     Undefined symbols: "_clock_gettime", referenced from:
 #         _srandrand in libcommon.a(util.o)
 #
-# Restating -lncurses is required, not decorative: a command-line assignment
-# REPLACES the Makefile's `libs := -lncurses` rather than adding to it. Same
-# trap as TARGET_XLIBS in lang/luajit.
+# Feed it through LDFLAGS. Config.mk appends that into its own flag list:
 #
-# Verified by hand before setting it -- relinking .o/adventure/*.o against
-# -lncurses -lMacportsLegacySupport produced a working binary.
-build.args-append   libs="-lncurses -lMacportsLegacySupport"
+#     ldflags += -L/opt/local/lib -Wl,-search_paths_first ${LDFLAGS}
+#
+# so this ADDS rather than replaces -- which is why LDFLAGS is the right knob
+# and `ldflags=` on the command line is not: that would wipe out the -L, the
+# -Wl,-search_paths_first and the -g/-s the file sets for itself.
+#
+# Note the per-binary rule puts flags BEFORE the objects:
+#
+#     ${adventure/exe}: ${adventure/objs} ${comlib}
+#         @${CC} ${ldflags} -o $@ $^
+#
+# which is the wrong side for a static archive on a traditional linker. It
+# works because Apple's ld64 resolves it anyway; checked explicitly rather
+# than assumed, by linking the real objects with the library in that position.
+#
+# (An earlier attempt set `libs=` instead. That is dead code for this port --
+# the rule above never references ${libs}.)
+build.args-append   LDFLAGS="-L${prefix}/lib -lMacportsLegacySupport"
 
 set objdir          ${workpath}/objdir
 build.args-append   builddir=${objdir}

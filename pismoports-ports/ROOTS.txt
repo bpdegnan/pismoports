@@ -78,6 +78,17 @@ openssh
 # only uses it for optional image conversion in its LaTeX rules -- patching that
 # dependency out avoids libjxl and libheif entirely and makes the rest routine.
 
+# GNU Forth, for practising against the Pismo's Open Firmware. Needed no new
+# dependencies -- libtool and libffi were already here.
+#
+# Worth being clear about what this does and does not give you: gforth is ANS
+# Forth. Open Firmware is IEEE 1275, which is ANS Forth plus a device-tree
+# vocabulary (dev, .properties, select-dev, show-devs and friends) that gforth
+# has no reason to implement. So this is the right tool for learning the
+# language and trying out word definitions, and the real OF prompt on the
+# machine (Cmd-Opt-O-F at boot) is where the 1275-specific parts get practised.
+gforth
+
 # Tiger ships zsh 4.2 from 2004. This is 5.9, for a usable interactive shell.
 # Deps (gdbm, libiconv, ncurses, pcre) were all already in the tree.
 #
