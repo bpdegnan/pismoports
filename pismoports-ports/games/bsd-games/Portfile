@@ -2,8 +2,10 @@
 
 PortSystem          1.0
 
-# Tiger fix, one of five; the other four are commented further down, next to
-# the settings they justify.
+# Tiger fix, one of six; the rest are commented further down, next to the
+# settings they justify. Nothing is wrong with this software -- every one of
+# the six is an assumption its build makes about the environment that only
+# fails on a 2005 OS.
 #
 #    common/util.c calls clock_gettime(CLOCK_REALTIME, ...), which macOS did
 #    not have until 10.12 -- Tiger's time.h and sys/time.h do not mention it
@@ -16,7 +18,7 @@ PortGroup           legacysupport 1.1
 
 name                bsd-games
 version             3.3
-revision            6
+revision            7
 categories          games
 license             BSD
 maintainers         {makr @mohd-akram} openmaintainer
@@ -121,6 +123,25 @@ compiler.c_standard     2011
 #
 #    The reinplace that does this is up in the post-patch block above, not
 #    here, because a second post-patch would have replaced that one.
+
+# The legacysupport PortGroup puts -lMacportsLegacySupport into LDFLAGS, and
+# Config.mk does honour that:
+#
+#     ldflags += -L/opt/local/lib -Wl,-search_paths_first ${LDFLAGS}
+#
+# but the libraries for the final link come from `libs`, not ldflags, so the
+# header declared clock_gettime, everything compiled, and the link then failed:
+#
+#     Undefined symbols: "_clock_gettime", referenced from:
+#         _srandrand in libcommon.a(util.o)
+#
+# Restating -lncurses is required, not decorative: a command-line assignment
+# REPLACES the Makefile's `libs := -lncurses` rather than adding to it. Same
+# trap as TARGET_XLIBS in lang/luajit.
+#
+# Verified by hand before setting it -- relinking .o/adventure/*.o against
+# -lncurses -lMacportsLegacySupport produced a working binary.
+build.args-append   libs="-lncurses -lMacportsLegacySupport"
 
 set objdir          ${workpath}/objdir
 build.args-append   builddir=${objdir}
