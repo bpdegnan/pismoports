@@ -12,7 +12,7 @@ conflicts               pango-devel
 set my_name             pango
 epoch                   1
 version                 1.55.0
-revision                1
+revision                2
 checksums               rmd160  e1a860f279fb352f41b95c7987e4cab678906945 \
                         sha256  a2c17a8dc459a7267b8b167bb149d23ff473b6ff9d5972bee047807ee2220ccf \
                         size    2098352
@@ -88,6 +88,25 @@ if {${universal_possible} && [variant_isset universal]} {
 platform darwin 8 {
     # meson on Tiger cannot use rpaths, so we workaround with this to find dylib
     build.env-append    "DYLD_LIBRARY_PATH=${build_dir}/pango"
+
+    # ...and destroot needs it too. `meson install` re-runs ninja, which still
+    # has utils/pango-view.1 to generate, and help2man makes that man page by
+    # RUNNING the freshly built binary:
+    #
+    #   help2man: can't get `--help-all' info from .../build/utils/pango-view
+    #
+    # The binary is linked against @loader_path/libpango-1.0.0.dylib, which
+    # Tiger's dyld does not resolve, so it dies before printing anything.
+    # Confirmed directly in the build tree:
+    #
+    #   $ utils/pango-view --help-all
+    #   dyld: Library not loaded: @loader_path/libpango-1.0.0.dylib
+    #   $ DYLD_LIBRARY_PATH=build/pango utils/pango-view --help-all
+    #   Usage: pango-view [OPTION?] - FILE
+    #
+    # build.env alone is not enough precisely because the failing step runs in
+    # the destroot phase, not the build phase.
+    destroot.env-append "DYLD_LIBRARY_PATH=${build_dir}/pango"
 
     # gcc14 turns -Wincompatible-pointer-types into an error, which stops the
     # pango-view utility:
