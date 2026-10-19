@@ -133,3 +133,32 @@ texlive-fonts-recommended
 # kpathsea finds them with no per-user setup.
 texlive-latex-extra
 texlive-publishers
+
+# Icarus Verilog. Costs NOTHING new on its own -- all seven of its deps
+# (bzip2, readline, zlib, bison, autoconf, gperf, legacy-support) were already
+# here, so the closure did not grow by a single portdir.
+#
+# It also arrives better prepared for this platform than most: the Portfile
+# already carries legacysupport with newest_darwin_requires_legacy 10 (for
+# strndup, the only old-API call in the whole source), a patch for
+# _NSGetExecutablePath, and compiler.cxx_standard 2011. The source asks for
+# -std=c++11 but uses none of <thread>, <mutex>, <atomic>, <chrono>,
+# <unordered_map> or <regex>, so it avoids the C++11 runtime corners that
+# break on a 2005 OS.
+#
+# The one thing that should have been fatal -- `-Wl,-rpath,${prefix}/lib`,
+# when @rpath did not exist until 10.5 -- is already handled by devel/ld64,
+# which builds +tigerrpath by default on darwin 8 and is patched both to stop
+# erroring on -rpath and to stop emitting the atom. Nothing needs the rpath
+# anyway: libvvp.so gets an absolute -install_name instead.
+iverilog
+
+# The HTML documentation, rebuilt against Python 3.11 rather than upstream's
+# 3.12 -- see the subport in science/iverilog/Portfile for why.
+#
+# This is the expensive half: 33 new portdirs, all of them pure-Python
+# (py-sphinx and its tree, plus docutils/hatchling/pygments/sphinx _select
+# stubs). They are noarch, so they repack rather than compile and carry no
+# Tiger risk -- but it is 33 ports of churn for documentation. Drop this root
+# if the tree should stay lean; iverilog itself does not depend on it.
+iverilog-docs

@@ -1,0 +1,140 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+PortSystem          1.0
+PortGroup           github 1.0
+PortGroup           compiler_blacklist_versions 1.0
+PortGroup           legacysupport 1.1
+
+# strndup
+legacysupport.newest_darwin_requires_legacy 10
+
+github.setup        steveicarus iverilog 20250103 s
+github.tarball_from archive
+
+revision            2
+set major           12
+set minor           0
+
+categories          science
+license             GPL-2+
+maintainers         {gmail.com:degnan.68k @bpdegnan} \
+                    {mark @markemer} \
+                    openmaintainer
+                    
+description         Icarus Verilog
+long_description    Icarus Verilog is a Verilog simulation and synthesis tool. \
+                    It operates as a compiler, compiling source code writen in \
+                    Verilog (IEEE-1364) into some target format. For batch \
+                    simulation, the compiler can generate C++ code that is \
+                    compiled and linked with a run time library (called \
+                    \"vvm\") then executed as a command to run the simulation. \
+                    For synthesis, the compiler generates netlists in the \
+                    desired format.
+
+homepage            http://iverilog.icarus.com/
+
+checksums           rmd160  41f0a34641ce8bf4955f2248ee606707deedbf92 \
+                    sha256  eed6e7569eb9111a6384ed2088e38b51541236a1806ed469208419f41b8224ae \
+                    size    3111119
+
+depends_lib-append      port:bzip2 \
+                        port:readline \
+                        port:zlib
+
+depends_build-append    port:bison \
+                        port:autoconf \
+                        port:gperf
+
+use_autoconf        yes
+
+# configure.ac:17 calls AX_PROG_CC_FOR_BUILD, which probes for a compiler to
+# run on the BUILD machine. It is not a cross build, but the macro does its
+# own AC_PROG_CC with the environment reset, so it picks bare `gcc` off PATH
+# -- Tiger's /usr/bin/gcc 4.0 -- rather than the gcc14 MacPorts selected:
+#
+#   configure:5320: gcc -std=gnu23 -g -O2 conftest.c
+#   cc1: error: unrecognized command line option "-std=gnu23"
+#   configure:5372: error: C compiler cannot create executables
+#
+# The -std=gnu23 probe comes from regenerating configure with our autoconf
+# 2.73 (use_autoconf yes above); the shipped configure predates it. So this
+# needs BOTH an ancient system compiler and a modern autoconf, which is why
+# it shows up here and nowhere upstream tests.
+#
+# "cannot create executables" is misleading -- the MacPorts compiler links
+# fine, and config.log shows its conftest at :3840 returning 0 and the binary
+# running. Only the second, build-machine probe fails.
+#
+# AX_PROG_CC_FOR_BUILD honours these from the environment. Verified by running
+# the real configure by hand with them set: rc=0, all config headers written.
+configure.env-append    CC_FOR_BUILD=${configure.cc} \
+                        CXX_FOR_BUILD=${configure.cxx}
+
+configure.args-append --enable-libvvp
+configure.ldflags-append -Wl,-rpath,${prefix}/lib
+
+patchfiles-append patch-vvp-Makefile.in.diff
+
+# main.c:1065:17: error: implicit declaration of function '_NSGetExecutablePath' [-Wimplicit-function-declaration]
+patchfiles-append patch-fix-headers.diff
+
+platform darwin {
+    #under MacOS, this is needed, the library references were incorrect as-is
+    configure.cxxflags-append -fPIC
+}
+
+compiler.cxx_standard 2011
+
+if {[string match *clang* ${configure.cxx}] && ${configure.cxx_stdlib} ne ""} {
+    configure.ldflags-append -stdlib=${configure.cxx_stdlib}
+}
+
+test.run            yes
+test.target         check
+
+destroot.destdir    prefix=${destroot}${prefix}
+
+post-destroot {
+    if {[file exists ${destroot}${prefix}/lib/libvvp.so]} {
+        # Fix just the library's install name
+        system "install_name_tool -id ${prefix}/lib/libvvp.so ${destroot}${prefix}/lib/libvvp.so"
+    }
+}
+
+# g++-4.2: -E, -S, -save-temps and -M options are not allowed with multiple -arch flags
+universal_variant   no
+
+subport ${name}-docs {
+    description         Documentation for Icarus Verilog
+    long_description    This subport provides the documentation for Icarus Verilog, \
+                        including user guides and API references.
+
+    # Python 3.11, not 3.12: this tree carries lang/python311 and has no
+    # python312, so asking for py312-sphinx would drag in a second complete
+    # Python runtime purely to render HTML. py-sphinx lists 311 in its
+    # python.versions, so this is a supported combination upstream.
+    #
+    # `port:sphinx` is deliberately NOT carried over from upstream. That is
+    # textproc/sphinx -- the Sphinx FULL-TEXT SEARCH ENGINE from
+    # sphinxsearch.com, version 2.2.11 -- which shares a name with the
+    # documentation generator and has nothing to do with it. It installs no
+    # sphinx-build. Depending on it builds a search server for no reason.
+    depends_build-append       port:py311-sphinx
+
+    worksrcdir          ${github.project}-${github.version}
+
+    pre-build {
+        reinplace "s|sphinx-build|sphinx-build-3.11|" ${worksrcpath}/Documentation/Makefile
+    }
+
+    build {
+        system -W ${worksrcpath}/Documentation "make html"
+    }
+
+    destroot {
+        set docdir ${destroot}${prefix}/share/doc/${name}
+        xinstall -d ${docdir}
+        system "cp -R ${worksrcpath}/Documentation/_build/html/* ${docdir}/"
+    }
+
+    depends_lib
+}

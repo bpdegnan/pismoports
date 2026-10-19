@@ -1,0 +1,53 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem          1.0
+PortGroup           python 1.0
+
+name                py-charset-normalizer
+version             3.4.1
+revision            0
+distname            charset_normalizer-${version}
+categories-append   devel
+license             MIT
+supported_archs     noarch
+platforms           {darwin any}
+
+python.versions     36 37 38 39 310 311 312 313
+python.pep517       yes
+
+maintainers         {stromnov @stromnov} openmaintainer
+
+description         A library that helps you read text from an unknown charset encoding.
+long_description    {*}${description}
+
+homepage            https://github.com/ousret/charset_normalizer
+
+checksums           rmd160  fe5c8974976a9f2d9b216f2ee34a6e13d53e38e4 \
+                    sha256  44251f18cd68a75b56585dd00dae26183e102cd5e0f9f1466e6df5da2ed64ea3 \
+                    size    123188
+
+if {${name} ne ${subport}} {
+    if {${python.version} < 37} {
+        version             2.0.12
+        revision            0
+        distname            ${python.rootname}-${version}
+        checksums           rmd160  f9bbde2f4ca286e47416d01eebd5b8c22cd8bff7 \
+                            sha256  2857e29ff0d34db842cd7ca3230549d1a697f96ee6d3fb071cfa6c7393832597 \
+                            size    79105
+        python.pep517       no
+        depends_lib-append  port:py${python.version}-setuptools
+    } elseif {${python.version} <= 38} {
+        version             3.4.0
+        revision            0
+        distname            charset_normalizer-${version}
+        checksums           rmd160  f733bdb195d6b6185a5310dece74784de8c94b49 \
+                            sha256  223217c3d4f82c3ac5e29032b3f1c2eb0fb591b72161f86d93f5719079dae93e \
+                            size    106620
+    } else {
+        patchfiles-append   patch-pyproject.toml.diff
+        depends_build-append \
+                            port:py${python.version}-setuptools_scm
+    }
+
+    livecheck.type      none
+}
