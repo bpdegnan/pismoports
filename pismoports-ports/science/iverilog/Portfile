@@ -10,7 +10,7 @@ legacysupport.newest_darwin_requires_legacy 10
 github.setup        steveicarus iverilog 20250103 s
 github.tarball_from archive
 
-revision            5
+revision            6
 set major           12
 set minor           0
 
@@ -81,26 +81,40 @@ pre-configure {
     configure.env-append    CC_FOR_BUILD=${configure.cc} \
                             CXX_FOR_BUILD=${configure.cxx}
 
-    # The libvvp.so rule that patch-vvp-Makefile.in.diff touches reads
-    # $(LDFLAGS) but NOT $(CXXFLAGS):
-    #
-    #     $(CXX) -shared $(LDFLAGS) -install_name ... -o libvvp.so $O ...
-    #
-    # and -arch ppc lives in CXXFLAGS, so that one link alone was built for
-    # gcc14's default target instead of this machine:
-    #
-    #     otool -h libvvp.so  ->  cputype 18  cpusubtype 10   (= PowerPC 7400)
-    #
-    # A G3 cannot execute G4 code, so every binary linking it died at launch
-    # with "dyld: incompatible cpu-subtype" (rc=133) -- after a completely
-    # clean build, which is what makes it easy to miss. The executables were
-    # fine; only the shared library was wrong.
-    #
-    # Putting the arch flag in LDFLAGS reaches that rule. It duplicates
-    # -arch ppc on the links that already had it via CXXFLAGS, which is
-    # harmless. Same reason this is in pre-configure as the vars above:
-    # read at parse time the value is not final.
-    configure.ldflags-append {*}${configure.ld_archflags}
+}
+
+# vvp/ builds for the WRONG CPU. After a completely clean build, every binary
+# that loads libvvp.so dies at launch:
+#
+#     dyld: incompatible cpu-subtype          (rc 133)
+#     otool -h  ->  cputype 18  cpusubtype 10     = PowerPC 7400, i.e. G4
+#
+# and a G3 cannot execute G4 code. Only vvp/ is affected:
+#
+#     iverilog    subtype 0    generic ppc   OK
+#     vvp         subtype 10   G4            broken
+#     libvvp.so   subtype 10   G4            broken
+#
+# The cause is in vvp/Makefile.in, whose link rules use $(LDFLAGS) but never
+# $(CXXFLAGS) -- and -arch ppc is in CXXFLAGS, not LDFLAGS:
+#
+#     $(CXX) $(LDFLAGS) -o vvp@EXEEXT@ main.o -L. -lvvp $(LIBS)
+#     $(CXX) -shared $(LDFLAGS) -o libvvp.so $O $(LIBS) $(dllib)
+#
+# so those two links fall back to gcc14's default target. Every other
+# directory compiles AND links through CXXFLAGS, which is why iverilog itself
+# is fine.
+#
+# An earlier attempt appended ${configure.ld_archflags} to configure.ldflags
+# instead. That did nothing: configure_get_ld_archflags returns "" unless
+# arch_flag_supported says the selected compiler takes -arch, and it does not
+# vouch for MacPorts gcc. Putting CXXFLAGS into the rules is both the actual
+# cause and independent of that plumbing.
+post-patch {
+    reinplace {s|\$(CXX) -shared \$(LDFLAGS)|$(CXX) $(CXXFLAGS) -shared $(LDFLAGS)|g} \
+        ${worksrcpath}/vvp/Makefile.in
+    reinplace {s|\$(CXX) \$(LDFLAGS)|$(CXX) $(CXXFLAGS) $(LDFLAGS)|g} \
+        ${worksrcpath}/vvp/Makefile.in
 }
 
 # vvp/Makefile.in:151 uses else-if chaining:
