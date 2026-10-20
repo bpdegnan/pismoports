@@ -10,7 +10,7 @@ legacysupport.newest_darwin_requires_legacy 10
 github.setup        steveicarus iverilog 20250103 s
 github.tarball_from archive
 
-revision            2
+revision            4
 set major           12
 set minor           0
 
@@ -66,8 +66,38 @@ use_autoconf        yes
 #
 # AX_PROG_CC_FOR_BUILD honours these from the environment. Verified by running
 # the real configure by hand with them set: rc=0, all config headers written.
-configure.env-append    CC_FOR_BUILD=${configure.cc} \
-                        CXX_FOR_BUILD=${configure.cxx}
+#
+# This MUST be in pre-configure, not at the top level. ${configure.cc} read
+# while the Portfile is being parsed gives the DEFAULT compiler, before
+# compiler.cxx_standard 2011 above has blacklisted it and promoted the choice
+# to gcc14. Setting it at top level produced exactly that, from the log:
+#
+#   CC='/opt/local/bin/gcc-mp-14'                 <- real selection
+#   CC_FOR_BUILD='/opt/local/bin/gcc-apple-4.2'   <- stale, parse-time value
+#
+# and apple-gcc-4.2 does not know -std=gnu23 either, so the build failed
+# identically and looked like the fix had not worked at all.
+pre-configure {
+    configure.env-append    CC_FOR_BUILD=${configure.cc} \
+                            CXX_FOR_BUILD=${configure.cxx}
+}
+
+# vvp/Makefile.in:151 uses else-if chaining:
+#
+#     else ifeq (@LIBVVP@,yes)
+#
+# which arrived in GNU Make 3.81. Tiger's /usr/bin/make is 3.80, from 2002, so
+# it reads the `else', treats the `ifeq' as junk after it, and then trips over
+# the genuine `else' further down:
+#
+#     vvp/Makefile:151: Extraneous text after `else' directive
+#     vvp/Makefile:163: *** only one `else' per conditional.  Stop.
+#
+# Note this is reached ONLY with --enable-libvvp below; the chain exists to
+# pick the libvvp build. Same 3.80 limitation that games/bsd-games hits, and
+# the same answer: build with MacPorts' gmake rather than patch the Makefile.
+depends_build-append    port:gmake
+build.cmd               ${prefix}/bin/gmake
 
 configure.args-append --enable-libvvp
 configure.ldflags-append -Wl,-rpath,${prefix}/lib
