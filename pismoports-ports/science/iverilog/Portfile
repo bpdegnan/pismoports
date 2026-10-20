@@ -10,7 +10,7 @@ legacysupport.newest_darwin_requires_legacy 10
 github.setup        steveicarus iverilog 20250103 s
 github.tarball_from archive
 
-revision            6
+revision            7
 set major           12
 set minor           0
 
@@ -83,39 +83,50 @@ pre-configure {
 
 }
 
-# vvp/ builds for the WRONG CPU. After a completely clean build, every binary
-# that loads libvvp.so dies at launch:
+# THREE binaries come out stamped G4, and a G3 refuses to load them. After a
+# completely clean build -- port install reports success, iverilog -V prints
+# a version -- the first real compile dies:
 #
 #     dyld: incompatible cpu-subtype          (rc 133)
-#     otool -h  ->  cputype 18  cpusubtype 10     = PowerPC 7400, i.e. G4
 #
-# and a G3 cannot execute G4 code. Only vvp/ is affected:
+#     iverilog     subtype 0    generic ppc   OK
+#     ivl          subtype 10   PowerPC 7400  broken   <- iverilog spawns this
+#     vvp          subtype 10   PowerPC 7400  broken
+#     libvvp.so    subtype 10   PowerPC 7400  broken
 #
-#     iverilog    subtype 0    generic ppc   OK
-#     vvp         subtype 10   G4            broken
-#     libvvp.so   subtype 10   G4            broken
+# None of it is compiled for G4: every .o is subtype 0. The marking appears AT
+# LINK TIME. These three are exactly the links that use -Wl,-all_load (set in
+# both the top-level and vvp/ LDFLAGS), which ivl and vvp need so that the
+# .tgt and .vpi plugins they dlopen can resolve symbols back into them.
 #
-# The cause is in vvp/Makefile.in, whose link rules use $(LDFLAGS) but never
-# $(CXXFLAGS) -- and -arch ppc is in CXXFLAGS, not LDFLAGS:
+# -all_load pulls in EVERY member of every static archive on the link line
+# rather than only those that satisfy a reference, and gcc14's libef_ppc.a
+# contains darwin-vecsave.o -- the AltiVec vector-register save/restore
+# helpers, genuinely G4 code. One G4 member stamps the whole output G4.
+# Proved by relinking libvvp.so by hand: with -all_load subtype 10, without
+# it subtype 0, everything else identical.
 #
-#     $(CXX) $(LDFLAGS) -o vvp@EXEEXT@ main.o -L. -lvvp $(LIBS)
-#     $(CXX) -shared $(LDFLAGS) -o libvvp.so $O $(LIBS) $(dllib)
+# -all_load cannot simply be dropped: $display and $finish are themselves VPI
+# routines in system.vpi and need it. So the output is relabelled instead.
+# That is safe here, and only here, because darwin-vecsave.o is DEAD CODE:
+# those routines run only when compiled code saves vector registers, nothing
+# is built with -maltivec, and a G3 has no AltiVec to use. They are present
+# but unreachable.
 #
-# so those two links fall back to gcc14's default target. Every other
-# directory compiles AND links through CXXFLAGS, which is why iverilog itself
-# is fine.
+# Verified end to end on a G3 before committing to it -- all three relinked
+# with -force_cpusubtype_ALL, then a counter testbench through the complete
+# iverilog -> ivlpp -> ivl -> vvp pipeline:
 #
-# An earlier attempt appended ${configure.ld_archflags} to configure.ldflags
-# instead. That did nothing: configure_get_ld_archflags returns "" unless
-# arch_flag_supported says the selected compiler takes -arch, and it does not
-# vouch for MacPorts gcc. Putting CXXFLAGS into the rules is both the actual
-# cause and independent of that plumbing.
-post-patch {
-    reinplace {s|\$(CXX) -shared \$(LDFLAGS)|$(CXX) $(CXXFLAGS) -shared $(LDFLAGS)|g} \
-        ${worksrcpath}/vvp/Makefile.in
-    reinplace {s|\$(CXX) \$(LDFLAGS)|$(CXX) $(CXXFLAGS) $(LDFLAGS)|g} \
-        ${worksrcpath}/vvp/Makefile.in
-}
+#     RESULT q=10 (expect 10)
+#     PASS
+#
+# Two earlier fixes targeted the wrong thing and are worth not repeating.
+# Appending ${configure.ld_archflags} to LDFLAGS was a no-op: that variable is
+# "" unless arch_flag_supported vouches for the compiler, and it does not for
+# MacPorts gcc. Adding $(CXXFLAGS) to the vvp link rules did put -arch ppc on
+# those links, and changed nothing -- the arch flag was never the problem.
+# A literal flag is used here precisely so it cannot silently expand to "".
+configure.ldflags-append -Wl,-force_cpusubtype_ALL
 
 # vvp/Makefile.in:151 uses else-if chaining:
 #
