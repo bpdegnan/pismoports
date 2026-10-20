@@ -10,7 +10,7 @@ legacysupport.newest_darwin_requires_legacy 10
 github.setup        steveicarus iverilog 20250103 s
 github.tarball_from archive
 
-revision            4
+revision            5
 set major           12
 set minor           0
 
@@ -80,6 +80,27 @@ use_autoconf        yes
 pre-configure {
     configure.env-append    CC_FOR_BUILD=${configure.cc} \
                             CXX_FOR_BUILD=${configure.cxx}
+
+    # The libvvp.so rule that patch-vvp-Makefile.in.diff touches reads
+    # $(LDFLAGS) but NOT $(CXXFLAGS):
+    #
+    #     $(CXX) -shared $(LDFLAGS) -install_name ... -o libvvp.so $O ...
+    #
+    # and -arch ppc lives in CXXFLAGS, so that one link alone was built for
+    # gcc14's default target instead of this machine:
+    #
+    #     otool -h libvvp.so  ->  cputype 18  cpusubtype 10   (= PowerPC 7400)
+    #
+    # A G3 cannot execute G4 code, so every binary linking it died at launch
+    # with "dyld: incompatible cpu-subtype" (rc=133) -- after a completely
+    # clean build, which is what makes it easy to miss. The executables were
+    # fine; only the shared library was wrong.
+    #
+    # Putting the arch flag in LDFLAGS reaches that rule. It duplicates
+    # -arch ppc on the links that already had it via CXXFLAGS, which is
+    # harmless. Same reason this is in pre-configure as the vars above:
+    # read at parse time the value is not final.
+    configure.ldflags-append {*}${configure.ld_archflags}
 }
 
 # vvp/Makefile.in:151 uses else-if chaining:
