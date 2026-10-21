@@ -173,6 +173,24 @@ py311-matplotlib
 # in it that could carry G4 code.
 py311-networkx
 
+# Data frames and the rest of the scientific stack. scipy needs a real
+# BLAS/LAPACK (numpy's bundled lapack_lite is not exported to other packages),
+# and upstream again defaults to OpenBLAS; python/py-scipy here adds +netlib,
+# netlib's reference BLAS/LAPACK from math/lapack -- plain Fortran, no AltiVec.
+py311-pandas
+py311-scipy
+# Statistical plotting on top of matplotlib and pandas; pure Python.
+py311-seaborn
+
+# HDF5 from Python. h5py is HDF5 as numpy arrays; PyTables is what pandas'
+# read_hdf/to_hdf use. Checked for G4 code: c-blosc2 has AltiVec shuffle
+# routines but its CMakeLists only enables them for ppc64le, so 32-bit
+# PowerPC gets the generic code (worth re-checking on upgrade -- if enabled,
+# its cpu-feature probe reports AltiVec unconditionally, with no runtime
+# test). c-blosc 1.x has no AltiVec; hdf5, numexpr, lzo2, snappy are plain.
+py311-tables
+py311-h5py
+
 # Icarus Verilog. Costs NOTHING new on its own -- all seven of its deps
 # (bzip2, readline, zlib, bison, autoconf, gperf, legacy-support) were already
 # here, so the closure did not grow by a single portdir.

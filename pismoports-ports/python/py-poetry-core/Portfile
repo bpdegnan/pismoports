@@ -1,0 +1,60 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem          1.0
+PortGroup           python 1.0
+PortGroup           select 1.0
+
+# If you update this port, also update the port poetry to the latest
+# compatible with this port. py-poetry-core is closely coupled to poetry,
+# both in terms of APIs but also the version pinning.
+name                py-poetry-core
+version             2.0.1
+revision            0
+
+distname            poetry_core-${version}
+
+checksums           rmd160  676cd58ac137a39c0fe6c26994c0465cce94650f \
+                    sha256  10177c2772469d9032a49f0d8707af761b1c597cea3b4fb31546e5cd436eb157 \
+                    size    355487
+
+categories-append   devel
+supported_archs     noarch
+platforms           {darwin any}
+license             MIT
+maintainers         {gmail.com:davidgilman1 @dgilman} openmaintainer
+
+homepage            https://github.com/python-poetry/poetry-core
+description         A PEP 517 build backend implementation developed for Poetry.
+long_description    {*}${description} This project is intended to be a light \
+                    weight, fully compliant, self-contained package allowing PEP 517 \
+                    compatible build frontends to build Poetry managed projects.
+
+python.versions     37 38 39 310 311 312 313
+python.pep517       yes
+# Bootstraps itself, no backend dependencies needed
+python.pep517_backend
+
+if {${name} ne ${subport}} {
+    if {${python.version} == 37} {
+        version     1.6.1
+        revision    0
+        distname    poetry_core-${version}
+        checksums   rmd160  1d3c7bfed575e4fb9424dc78b2f1c4524141aeb5 \
+                    sha256  0f9b0de39665f36d6594657e7d57b6f463cc10f30c28e6d1c3b9ff54c26c9ac3 \
+                    size    443618
+        depends_lib-append  port:py${python.version}-importlib-metadata
+    }
+    if {${python.version} == 38} {
+        version     1.9.1
+        revision    0
+        distname    poetry_core-${version}
+        checksums   rmd160  259c8e1cca4b6282c3612dfe3add2c304fbfe0e0 \
+                    sha256  7a2d49214bf58b4f17f99d6891d947a9836c9899a67a5069f52d7b67217f61b8 \
+                    size    337193
+    }
+    post-destroot {
+        set docdir ${prefix}/share/doc/${subport}
+        xinstall -m 0644 -W ${worksrcpath} README.md LICENSE \
+            ${destroot}${docdir}
+    }
+}
