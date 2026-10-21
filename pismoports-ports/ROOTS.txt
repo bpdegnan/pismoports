@@ -101,6 +101,19 @@ gforth
 # a port of htop rather than a patch to it.
 zsh
 
+# A terminal for when tmux needs more than Tiger's Terminal.app gives it:
+# OSC 52 clipboard, mouse reporting and 256 colours, none of which
+# Terminal.app had before 10.7. Runs under X11. The xterm Tiger ships in
+# /usr/X11R6/bin is from 2005 and predates all three. New deps were only
+# luit and xorg-libXinerama; the rest of its X stack was already here.
+xterm
+
+# JSON on the command line. gh cannot exist here -- Go has no 32-bit PowerPC
+# target on any OS, and gccgo's libgo was never finished for Darwin -- so
+# GitHub's REST API is reached with curl instead, and jq is what makes the
+# replies usable from a shell script. Plain C; only new dep is oniguruma6.
+jq
+
 # Circuit simulator, so paper work can be checked on the Pismo. These come
 # from bpdegnan/macportseda, NOT from macports-ports -- eda-ngspice47 installs
 # into its own prefix (libexec/eda/ngspice47) and is reached via `port select`.
