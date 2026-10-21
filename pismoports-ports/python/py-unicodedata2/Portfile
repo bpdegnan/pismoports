@@ -1,0 +1,28 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem          1.0
+PortGroup           python 1.0
+
+name                py-unicodedata2
+version             16.0.0
+revision            0
+license             Apache-2
+maintainers         {amake @amake} openmaintainer
+
+description         Unicodedata backport for Python 2/3 updated to the latest Unicode \
+                    version.
+long_description    {*}${description}
+
+homepage            http://github.com/fonttools/unicodedata2
+
+homepage            https://github.com/fonttools/unicodedata2
+
+checksums           rmd160  01b99a4fb0a8c7b901b35d50dee6c1ad6a8e0790 \
+                    sha256  05488d6592b59cd78b61ec37d38725416b2df62efafa6a0d63a631b27aa474fc \
+                    size    672155
+
+python.versions     39 310 311 312 313
+
+if {${name} ne ${subport}} {
+    test.run            yes
+}

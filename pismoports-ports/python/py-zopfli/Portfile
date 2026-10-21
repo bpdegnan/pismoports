@@ -1,0 +1,37 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem          1.0
+PortGroup           python 1.0
+PortGroup           compiler_wrapper 1.0
+
+name                py-zopfli
+version             0.2.3.post1
+revision            0
+
+license             Apache-2
+maintainers         nomaintainer
+
+description         Zopfli module for python
+long_description    {*}${description}
+
+homepage            https://github.com/obp/py-zopfli
+
+checksums           rmd160  fbd9dbecbdac1808bf2f11eaeb372405801cfb95 \
+                    sha256  96484dc0f48be1c5d7ae9f38ed1ce41e3675fd506b27c11a6607f14b49101e99 \
+                    size    175629
+
+python.versions     39 310 311 312 313
+
+if {${name} ne ${subport}} {
+    depends_build-append \
+                    port:py${python.version}-setuptools_scm
+
+    test.run        yes
+
+    post-destroot {
+        set docdir ${prefix}/share/doc/${subport}
+        xinstall -d ${destroot}${docdir}
+        xinstall -m 0644 -W ${worksrcpath} README.rst COPYING \
+            ${destroot}${docdir}
+    }
+}
