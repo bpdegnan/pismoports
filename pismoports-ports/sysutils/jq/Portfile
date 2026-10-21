@@ -2,10 +2,25 @@
 
 PortSystem          1.0
 PortGroup           github 1.0
+PortGroup           legacysupport 1.1
+
+# realpath(path, NULL). Every jq invocation that compiles a program walks the
+# module search path through jq_realpath() (src/util.c), which sizes its buffer
+# with pathconf(path, _PC_PATH_MAX) -- and pathconf fails on a path that does
+# not exist, such as the default ~/.jq, leaving buf NULL. jq then relies on
+# realpath() allocating the result itself, which is POSIX.1-2008 behaviour
+# Mac OS X only gained in 10.6. Tiger's realpath writes through the NULL:
+#
+#     Thread 0 Crashed:  realpath + 124  <-  jq_realpath  <-  find_lib
+#     EXC_BAD_ACCESS  KERN_PROTECTION_FAILURE at 0x00000000      (rc 138)
+#
+# so `jq --version` works and `jq .` on anything does not. legacy-support
+# exports a realpath that allocates when given NULL (REALPATH_ALLOC, < 10.6).
+legacysupport.newest_darwin_requires_legacy 9
 
 github.setup        jqlang jq 1.7.1 jq-
 github.tarball_from releases
-revision            1
+revision            2
 
 categories          sysutils
 license             MIT
