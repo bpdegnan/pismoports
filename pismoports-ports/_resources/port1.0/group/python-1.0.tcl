@@ -80,7 +80,13 @@ proc python_get_version {} {
 
 proc python_get_default_version {} {
     global python.versions
-    set def_v 313
+    # PismoPorts: 311, not upstream's 313. This tree ships exactly one Python
+    # runtime, python311, and every port in the closure already names py311-*
+    # explicitly. The default only matters for what is ADDED later: with 313
+    # here, the next py-foo that lists 313 in python.versions would silently
+    # pull a second complete Python onto a G3. Pinning the default keeps new
+    # ports on 3.11 unless they explicitly ask otherwise.
+    set def_v 311
     if {[info exists python.versions]} {
         if {${def_v} in ${python.versions}} {
             return ${def_v}
