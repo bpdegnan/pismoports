@@ -168,6 +168,11 @@ py311-numpy
 py311-shapely
 py311-matplotlib
 
+# Graph algorithms (shortest paths, components, flows). Pure Python and
+# noarch, with no runtime dependencies beyond python311, so there is nothing
+# in it that could carry G4 code.
+py311-networkx
+
 # Icarus Verilog. Costs NOTHING new on its own -- all seven of its deps
 # (bzip2, readline, zlib, bison, autoconf, gperf, legacy-support) were already
 # here, so the closure did not grow by a single portdir.
