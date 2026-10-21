@@ -114,6 +114,12 @@ xterm
 # replies usable from a shell script. Plain C; only new dep is oniguruma6.
 jq
 
+# Text web browser, built +ssl (the Portfile default) against MacPorts'
+# OpenSSL 3 -- TLS 1.3 and current ciphers, where Tiger's own OpenSSL 0.9.7
+# can no longer complete a handshake with most sites. Every dependency was
+# already in the tree; only www/lynx itself is new.
+lynx
+
 # Circuit simulator, so paper work can be checked on the Pismo. These come
 # from bpdegnan/macportseda, NOT from macports-ports -- eda-ngspice47 installs
 # into its own prefix (libexec/eda/ngspice47) and is reached via `port select`.
