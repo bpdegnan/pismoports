@@ -38,6 +38,17 @@ configure.args-append \
 # error: ‘for’ loop initial declaration used outside C99 mode
 configure.cflags-append -std=c99
 
+# PismoPorts: needs GCC >= 4.5. include/b2nd.h marks functions with the
+# message form of the attribute, __attribute__((deprecated("..."))), which
+# Tiger's default compiler -- Apple gcc 4.2 -- rejects:
+#
+#     include/b2nd.h:585: error: wrong number of arguments specified for
+#     'deprecated' attribute
+#
+# Declaring C11 moves the selection past apple-gcc42 to gcc14, the same way
+# other ports in this tree get a modern compiler on darwin 8.
+compiler.c_standard 2011
+
 # https://trac.macports.org/ticket/67478
 platform darwin {
     if {${os.major} < 11 && [string match *gcc* ${configure.compiler}]} {
