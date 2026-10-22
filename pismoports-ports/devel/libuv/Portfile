@@ -10,7 +10,7 @@ PortGroup       muniversal 1.0
 github.setup    libuv libuv 1.44.2 v
 # Change github.tarball_from to 'releases' or 'archive' next update
 github.tarball_from tarball
-revision        0
+revision        1
 checksums       rmd160  3802316d7f5dcfe3906ba371d4a738ab60d77339 \
                 sha256  8ff28f6ac0d6d2a31d2eeca36aff3d7806706c7d3f5971f5ee013ddb0bdd2e9e \
                 size    3594484
@@ -77,6 +77,25 @@ platform darwin {
     if { ${os.major} == 8 } {
         # Tiger has no libutil
         patchfiles-append patch-no-libutil-on-Tiger.diff
+
+        # PismoPorts: terminals never become ready, so neovim's UI hangs.
+        #
+        # kqueue cannot watch a tty or pty on macOS, and libuv knows it:
+        # uv__stream_try_select() (src/unix/stream.c) probes the fd with
+        # EVFILT_READ and, if kqueue rejects it, hands the fd to a select(2)
+        # thread instead. But it only recognises the rejection as
+        # EV_ERROR + EINVAL, which is what later macOS reports. Tiger reports
+        # EV_ERROR + ENOTSUP (45) -- measured on a G3 with a python3 kqueue
+        # probe on /dev/ttyp1 -- so libuv concludes kqueue works, registers
+        # the terminal there, and never hears from it again.
+        #
+        # nvim 0.10+ is split into a UI process and an embedded server; the
+        # UI sat in flush_buf -> uv_run -> kevent waiting for the tty to
+        # accept the screen, the server sat waiting for keys, and the window
+        # stayed blank. The patch accepts ENOTSUP as well as EINVAL.
+        if {${subport} eq ${name}} {
+            patchfiles-append patch-libuv-tiger-tty-enotsup.diff
+        }
 
         configure.cppflags-append -D__DARWIN_UNIX03
         # prevent conflicting opentransport header from being pulled in

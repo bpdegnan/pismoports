@@ -1,0 +1,13 @@
+--- src/unix/stream.c.orig
++++ src/unix/stream.c
+@@ -301,7 +301,9 @@
+   if (ret == -1)
+     return UV__ERR(errno);
+ 
+-  if (ret == 0 || (events[0].flags & EV_ERROR) == 0 || events[0].data != EINVAL)
++  /* Mac OS X 10.4 reports ENOTSUP, not EINVAL, for a tty or pty. */
++  if (ret == 0 || (events[0].flags & EV_ERROR) == 0 ||
++      (events[0].data != EINVAL && events[0].data != ENOTSUP))
+     return 0;
+ 
+   /* At this point we definitely know that this fd won't work with kqueue */
