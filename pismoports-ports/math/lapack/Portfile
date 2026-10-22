@@ -98,6 +98,28 @@ if {${subport} eq ${name}} {
     }
 }
 
+# PismoPorts: on Tiger, BLAS + CBLAS + LAPACK only -- no LAPACKE, no ILP64.
+#
+# LAPACKE cannot be linked here. liblapacke is one dylib built from thousands
+# of objects, and Tiger's kernel rejects the resulting link command:
+#
+#     gcc-apple-4.2.1: error trying to exec '.../collect2':
+#         execv: Argument list too long
+#     make[2]: *** [lib/liblapacke.3.12.1.dylib] Error 1
+#
+# That came 10.8 hours into a farm build, after libblas, libcblas and
+# liblapack had all linked. Nothing in this tree uses LAPACKE (the C
+# wrappers); py-scipy +netlib, the reason this port is here, calls the
+# Fortran BLAS/LAPACK through blas.pc and lapack.pc.
+#
+# The _64-suffixed ILP64 copy of every routine is dropped for the same
+# consumer: SciPy uses the standard 32-bit-integer interface, and the second
+# copy roughly doubles the compile on a machine where it already takes hours.
+platform darwin 8 {
+    configure.args-replace  -DLAPACKE=ON -DLAPACKE=OFF
+    configure.args-append   -DBUILD_INDEX64_EXT_API=OFF
+}
+
 notes        "C headers are installed in ${prefix}/include/${name}."
 notes-append "LAPACK man pages are currently broken."
 notes-append "See on-line docs at https://www.netlib.org/lapack/ ."
