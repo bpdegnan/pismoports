@@ -1,0 +1,20 @@
+--- cpuinfo/cpuinfo.py.orig
++++ cpuinfo/cpuinfo.py
+@@ -361,7 +361,7 @@
+ def _check_arch():
+ 	arch, bits = _parse_arch(DataSource.arch_string_raw)
+ 	if not arch in ['X86_32', 'X86_64', 'ARM_7', 'ARM_8',
+-	               'PPC_64', 'S390X', 'MIPS_32', 'MIPS_64',
++	               'PPC_32', 'PPC_64', 'S390X', 'MIPS_32', 'MIPS_64',
+ 				   "RISCV_32", "RISCV_64"]:
+ 		raise Exception("py-cpuinfo currently only works on X86 "
+ 		                "and some ARM/PPC/S390X/MIPS/RISCV CPUs.")
+@@ -799,7 +799,7 @@
+ 		arch = 'ARM_8'
+ 		bits = 32
+ 	# PPC
+-	elif re.match(r'^ppc32$|^prep$|^pmac$|^powermac$', arch_string_raw):
++	elif re.match(r'^ppc32$|^prep$|^pmac$|^powermac$|^power macintosh$', arch_string_raw):
+ 		arch = 'PPC_32'
+ 		bits = 32
+ 	elif re.match(r'^powerpc$|^ppc64$|^ppc64le$', arch_string_raw):

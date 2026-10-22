@@ -6,7 +6,7 @@ PortGroup           python 1.0
 name                py-cpuinfo
 python.rootname     ${name}
 version             9.0.0
-revision            0
+revision            2
 
 supported_archs     noarch
 platforms           {darwin any}
@@ -27,6 +27,23 @@ checksums           rmd160  70ee76ca118f099879d834bb52ff9557e7077570 \
                     size    104716
 
 python.versions     38 39 310 311 312 313
+
+# PismoPorts: recognise a PowerPC Mac at all. Python on Mac OS X/ppc reports
+# platform.machine() as 'Power Macintosh', and _parse_arch() only accepts
+# ppc32/prep/pmac/powermac for 32-bit PowerPC, so the module raises at import:
+#
+#     Exception: py-cpuinfo currently only works on X86 and some
+#     ARM/PPC/S390X/MIPS/RISCV CPUs.
+#
+# That is not just cpuinfo's problem -- blosc2/__init__.py imports it, so
+# `import blosc2` failed too, and py-tables' setup.py runs that import while
+# locating blosc2 and died in get_requires_for_build_wheel.
+#
+# Two changes, both needed: '^power macintosh$' (matched after lower()) is
+# added to the PPC_32 pattern in _parse_arch(), and 'PPC_32' is added to
+# _check_arch()'s allow-list, which names PPC_64 but not PPC_32 -- with only
+# the first change the arch is recognised and then rejected anyway.
+patchfiles          patch-cpuinfo-power-macintosh.diff
 
 if {${name} ne ${subport}} {
     test.run        yes
