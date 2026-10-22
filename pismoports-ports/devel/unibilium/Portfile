@@ -5,7 +5,7 @@ PortGroup github 1.0
 
 github.setup        neovim unibilium 2.1.2 v
 github.tarball_from archive
-revision            2
+revision            3
 categories          devel
 maintainers         nomaintainer
 license             LGPL-3+
@@ -33,6 +33,27 @@ test.run            yes
 platform darwin 8 {
    #added for 10.4 support
    depends_build-append port:ncurses
+
+   # PismoPorts: Apple gcc 4.2 at -Os MISCOMPILES this library. Tiger's
+   # default compiler at MacPorts' default optimisation level is exactly that
+   # combination, and the result parses every terminfo entry as empty:
+   # the terminal name comes out right, then every number reads 65535 and
+   # every string NULL -- no cup, no clear -- and any entry with extended
+   # capabilities fails to load at all.
+   #
+   # neovim showed it: blank cursor_address meant text ran together across
+   # the screen in Terminal.app, and a NULL screen-256color entry crashed it
+   # outright inside tmux (unibi_count_ext_bool on NULL).
+   #
+   # Isolated on a farm guest by compiling unibilium.c itself and loading
+   # /opt/local/share/terminfo/78/xterm-color (expect cols=80, cup present):
+   #
+   #   gcc-apple-4.2 -O0  correct      gcc-4.0  -O0/-Os/-O2  correct
+   #   gcc-apple-4.2 -Os  BROKEN       gcc-mp-14 -O0/-Os/-O2 correct
+   #   gcc-apple-4.2 -O2  correct
+   #
+   # The source is fine; the compiler is not. Declaring C11 selects gcc14.
+   compiler.c_standard 2011
 
    # Build the library, man pages and tools, but NOT the test fixtures.
    #

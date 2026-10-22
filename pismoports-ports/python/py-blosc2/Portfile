@@ -7,6 +7,18 @@ name                py-blosc2
 version             2.5.1
 revision            1
 
+# PismoPorts: same failure as archivers/blosc2, one level up. The extension
+# blosc2_ext.c includes the installed ${prefix}/include/b2nd.h, whose
+# B2ND_DEPRECATED(msg) expands to __attribute__((deprecated(msg))) -- the
+# message form needs GCC >= 4.5, and Tiger's default Apple gcc 4.2 stops:
+#
+#     /opt/local/include/b2nd.h:585: error: wrong number of arguments
+#     specified for 'deprecated' attribute
+#
+# C11 moves the compiler selection to gcc14. (py-tables includes only
+# blosc2.h, which has no such attribute.)
+compiler.c_standard 2011
+
 categories-append   archivers devel
 maintainers         nomaintainer
 license             BSD
