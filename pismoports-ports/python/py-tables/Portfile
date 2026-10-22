@@ -9,6 +9,19 @@ version             3.9.2
 categories-append   science
 license             BSD
 
+# PismoPorts: needs a modern C compiler on Tiger. The bundled HDF5 filter,
+# hdf5-blosc2/src/blosc2_filter.c, uses C99 declarations in for loops and
+# pulls in ${prefix}/include/b2nd.h, so Apple gcc 4.2 fails twice over:
+#
+#     hdf5-blosc2/src/blosc2_filter.c:166: error: 'for' loop initial
+#         declaration used outside C99 mode
+#     /opt/local/include/b2nd.h:585: error: wrong number of arguments
+#         specified for 'deprecated' attribute
+#
+# The same b2nd.h failure as archivers/blosc2 and python/py-blosc2. C11 moves
+# the compiler selection to gcc14, which takes both.
+compiler.c_standard 2011
+
 python.versions     27 39 310 311 312
 
 maintainers         nomaintainer
