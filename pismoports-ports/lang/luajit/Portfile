@@ -11,7 +11,7 @@ PortGroup           muniversal 1.1
 set branch          2.1
 set version_date    2025-01-13T15:22:22Z
 github.setup        LuaJIT LuaJIT a4f56a459a588ae768801074b46ba0adcfb49eb1
-revision            4
+revision            5
 checksums           rmd160  a01e4fb5337b3dbb1e5eb544fc43dd8cfda9c610 \
                     sha256  b4120332a4191db9c9da2d81f9f11f0d4504fc4cff2dea0f642d3d8f1fcebd0e \
                     size    1082930
@@ -139,7 +139,25 @@ platform darwin 8 {
     # reach the parts of the build that decide whether a JIT exists at all.
     # LUA52COMPAT is restated because a command-line assignment replaces the
     # Makefile's value rather than adding to it.
-    build.args-append   XCFLAGS="-DLUAJIT_ENABLE_LUA52COMPAT -DLUAJIT_DISABLE_JIT"
+    #
+    # LUAJIT_UNWIND_INTERNAL: pcall could not catch ANY error. With the
+    # default external (DWARF) unwinding, every Lua error went straight to the
+    # panic handler, on the G3 and on the farm alike:
+    #
+    #   luajit -e 'print(pcall(function() error("boom") end))'
+    #       -> PANIC: unprotected error in call to Lua API (... boom)
+    #
+    # The interpreter's frames come from buildvm-generated assembly whose
+    # unwind tables the gcc14 unwinder cannot walk on this Mach-O/ppc target,
+    # so _Unwind_RaiseException never finds the pcall frame. neovim leans on
+    # pcall everywhere -- the visible symptom was nvim exiting with that PANIC
+    # as soon as filetype detection probed an extensionless file, because one
+    # content heuristic (dns_zone) errors by design and is meant to be caught.
+    # Internal unwinding is LuaJIT's own setjmp-style mechanism (lj_arch.h:
+    # it wins whenever LUAJIT_UNWIND_INTERNAL is defined, whatever the Makefile
+    # detected). The only loss is unwinding Lua errors through C++ frames,
+    # which nothing in this tree does.
+    build.args-append   XCFLAGS="-DLUAJIT_ENABLE_LUA52COMPAT -DLUAJIT_DISABLE_JIT -DLUAJIT_UNWIND_INTERNAL"
 }
 
 build.target        amalg
