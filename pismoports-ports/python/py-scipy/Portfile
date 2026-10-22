@@ -95,6 +95,31 @@ if {${name} ne ${subport}} {
     # It also drops py-pythran, py-gast, py-beniget and py-ply.
     build.args-append   -Csetup-args=-Duse-pythran=false
 
+    # ...and take pythran out of [build-system] requires to match. meson
+    # honours use-pythran=false, but `python -m build --no-isolation` checks
+    # pyproject.toml's requires list before meson ever runs, and stops:
+    #
+    #     ERROR Missing dependencies:
+    #         pythran<0.18.0,>=0.14.0
+    post-patch {
+        reinplace {/"pythran>=/d} ${worksrcpath}/pyproject.toml
+
+        # scipy/meson.build:240 asks `xcrun -sdk macosx --show-sdk-version`
+        # only to decide macOS13_3_or_later (Accelerate support). Tiger has
+        # no xcrun at all, so meson stops even with patch_scipy_meson.build's
+        # check: false:
+        #
+        #     scipy/meson.build:240:6: ERROR: Program or command 'xcrun' not
+        #     found or not executable
+        #
+        # sw_vers -productVersion answers the same question here ("10.4.11",
+        # so the >=13.3 comparison is false, as it should be).
+        if {${os.platform} eq "darwin" && ${os.major} <= 8} {
+            reinplace {s|run_command('xcrun', '-sdk', 'macosx', '--show-sdk-version', check: false)|run_command('sw_vers', '-productVersion', check: false)|} \
+                ${worksrcpath}/scipy/meson.build
+        }
+    }
+
     build.env-append    PATH=${python.prefix}/bin:$env(PATH)
 
     # PismoPorts: py-mypy is not carried over. Nothing in SciPy imports it at
