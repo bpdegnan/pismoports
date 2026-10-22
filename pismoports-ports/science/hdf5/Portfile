@@ -128,6 +128,21 @@ post-destroot {
 test.run            yes
 test.target         check
 
+# PismoPorts: on Tiger, build the library and tools but not the test suite.
+# Tiger's libc declares `void unsetenv(const char *)` -- the int-returning
+# POSIX form arrived with 10.5's UNIX03 conformance -- and test/vol.c checks
+# the return value through HDunsetenv (src/H5private.h), which cannot compile:
+#
+#     ../src/H5private.h:878:23: error: void value not ignored as it ought to be
+#     vol.c:2051:13: note: in expansion of macro 'HDunsetenv'
+#
+# Nothing in src/ or tools/ calls HDunsetenv; only the tests do. That failure
+# came 5 hours into a farm build, after libhdf5 itself had linked.
+platform darwin 8 {
+    configure.args-append   --disable-tests
+    test.run                no
+}
+
 variant hl description {
     Enable High Level interface.
   +hl is EXPERIMENTAL with +threadsafe
