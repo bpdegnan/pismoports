@@ -219,3 +219,32 @@ iverilog
 # Tiger risk -- but it is 33 ports of churn for documentation. Drop this root
 # if the tree should stay lean; iverilog itself does not depend on it.
 iverilog-docs
+
+# BearSSL: a small, self-contained TLS library in portable C (no assembly
+# required), useful where OpenSSL is too heavy. Upstream's port already sets
+# -DBR_LOMUL on 32-bit PowerPC (slow multiplier). BearSSL's POWER8 AES/GHASH
+# code is only enabled when the compiler targets POWER8 with crypto
+# extensions, which a G3 build never does.
+bearssl
+
+# General-purpose Python 3.11 libraries. Almost all pure Python; the only
+# compiled pieces are libyaml (plain C, for py-yaml) and greenlet (a small C
+# extension py-sqlalchemy uses). Deliberately NOT here, because they need
+# Rust, which has no PowerPC Darwin target: cryptography (and so paramiko),
+# pydantic v2, orjson, polars, modern jsonschema (rpds-py) -- and with it
+# Jupyter. psutil needs libproc, which Tiger lacks (same wall as htop).
+py311-sympy
+py311-yaml
+py311-click
+py311-rich
+py311-tqdm
+py311-tabulate
+py311-beautifulsoup4
+py311-openpyxl
+py311-pybtex
+py311-serial
+py311-sqlalchemy
+
+# The interactive shell. About twenty small pure-Python dependencies
+# (prompt_toolkit, jedi, parso, traitlets...), no compiled code.
+py311-ipython

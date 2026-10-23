@@ -1,0 +1,24 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem          1.0
+PortGroup           python 1.0
+
+name                py-uc-micro-py
+version             1.0.3
+revision            0
+
+platforms           {darwin any}
+supported_archs     noarch
+license             MIT
+maintainers         nomaintainer
+
+description         Micro subset of unicode data files for linkify-it-py projects.
+long_description    {*}${description}
+
+homepage            https://github.com/tsutsu3/uc.micro-py
+
+checksums           rmd160  d24992ab03f9f3455eef0228cd47e6ecf56b1ce9 \
+                    sha256  d321b92cff673ec58027c04015fcaa8bb1e005478643ff4a500882eaab88c48a \
+                    size    6043
+
+python.versions     39 310 311 312 313
