@@ -120,9 +120,19 @@ variant metalink description {Metalink support} {
                             port:libmetalink
 }
 
-if {![variant_isset ssl]} {
-    default_variants +gnutls
+# PismoPorts: OpenSSL by default, not GnuTLS. OpenSSL 3 is already here --
+# curl, lynx, python311 and MacPorts itself use it -- while GnuTLS would add
+# gnutls, p11-kit and their tree for one program.
+if {![variant_isset gnutls]} {
+    default_variants +ssl
 }
+
+# PismoPorts: libproxy is listed above but never used. wget only links it
+# with --enable-libproxy (configure.ac:960, off by default), which this
+# Portfile does not pass. The dependency still dragged in
+# gsettings-desktop-schemas, and with it python312 -- in a tree pinned to
+# Python 3.11.
+depends_lib-delete      port:libproxy
 
 post-patch {
     reinplace "s|@PREFIX@|${prefix}|g" \
