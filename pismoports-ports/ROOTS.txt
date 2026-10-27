@@ -248,3 +248,21 @@ py311-sqlalchemy
 # The interactive shell. About twenty small pure-Python dependencies
 # (prompt_toolkit, jedi, parso, traitlets...), no compiled code.
 py311-ipython
+
+# More of TeX Live for writing papers. texlive-math-science brings siunitx
+# (units -- standard in EE papers), algorithm2e/algorithmicx and physics;
+# texlive-bibtex-extra brings biblatex and its styles (usable with plain
+# bibtex via backend=bibtex; biber itself is a large Perl/CPAN build, not
+# added); texlive-bin-extra brings latexdiff, texcount and chktex.
+#
+# texlive-bin-extra is TRIMMED on Tiger (see its Portfile): upstream's
+# runtime dependencies for every bundled tool -- dvisvgm -> ImageMagick and
+# video codecs, tesseract, Perl/Tk, latexindent's Log4perl stack -- added
+# ~150 portdirs. Without them this whole block costs 14. latexindent,
+# texdoctk and the CTAN upload tools will not run; the rest do.
+texlive-math-science
+texlive-bibtex-extra
+texlive-bin-extra
+
+# Downloading papers and datasets from scripts.
+wget
