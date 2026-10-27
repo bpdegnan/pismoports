@@ -50,6 +50,18 @@ compiler.blacklist  *gcc-4.* {clang < 500}
 # <https://trac.macports.org/ticket/59195>
 compiler.cxx_standard
 
+# PismoPorts: build as C17. The regenerated configure (autoreconf above)
+# appends -std=gnu23 to CC whenever the compiler accepts it, which gcc14
+# does. Under C23 an empty parameter list means (void), so the bundled
+# pre-ANSI getopt.c -- `int getopt ();`, `extern char *getenv ();` -- no
+# longer compiles:
+#
+#     getopt.h:169:12: error: conflicting types for 'getopt'; have 'int(void)'
+#     getopt.c:276:46: error: too many arguments to function 'getenv'
+#
+# CFLAGS come after CC on the command line, so this -std wins.
+configure.cflags-append -std=gnu17
+
 configure.args      --disable-openssl \
                     --enable-fat \
                     --enable-shared \
