@@ -1,0 +1,28 @@
+--- src/_tkagg.cpp.orig
++++ src/_tkagg.cpp
+@@ -315,9 +315,10 @@
+     auto main_program = dlopen(NULL, RTLD_LAZY);
+     auto success = load_tcl_tk(main_program);
+     // We don't need to keep a reference open as the main program always exists.
+-    if (dlclose(main_program)) {
+-        throw std::runtime_error(dlerror());
+-    }
++    // Mac OS X 10.4's dlclose() rejects the dlopen(NULL) handle ("invalid
++    // handle passed to dlclose()"); closing it is a no-op anyway, so a
++    // failure here is not an error.
++    dlclose(main_program);
+     if (success) {
+         return;
+     }
+@@ -339,9 +340,8 @@
+     }
+     load_tcl_tk(tkinter_lib);
+     // We don't need to keep a reference open as tkinter has been imported.
+-    if (dlclose(tkinter_lib)) {
+-        throw std::runtime_error(dlerror());
+-    }
++    // As above: tolerate Mac OS X 10.4's dlclose() refusing the handle.
++    dlclose(tkinter_lib);
+ }
+ #endif // end not Windows
+ 
