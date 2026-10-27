@@ -127,11 +127,14 @@ if {![variant_isset gnutls]} {
     default_variants +ssl
 }
 
-# PismoPorts: libproxy is listed above but never used. wget only links it
-# with --enable-libproxy (configure.ac:960, off by default), which this
-# Portfile does not pass. The dependency still dragged in
-# gsettings-desktop-schemas, and with it python312 -- in a tree pinned to
-# Python 3.11.
+# PismoPorts: build without libproxy. It only reads desktop-wide proxy
+# settings (GNOME/KDE/PAC), which a Tiger machine does not have; wget still
+# honours http_proxy/https_proxy from the environment without it. The
+# dependency dragged in gsettings-desktop-schemas, and with it python312 --
+# in a tree pinned to Python 3.11. Both halves are needed: with only the
+# dependency removed, configure.args' --enable-libproxy makes configure stop
+# with "Package requirements (libproxy-1.0) were not met".
+configure.args-delete   --enable-libproxy
 depends_lib-delete      port:libproxy
 
 post-patch {
