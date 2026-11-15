@@ -6,8 +6,8 @@ PortGroup           xcodeversion    1.0
 PortGroup           wxWidgets       1.0
 
 name                gnuplot
-version             6.0.2
-revision            2
+version             6.0.6
+revision            0
 
 categories          math science
 # the license has some inconvenient requirements that we're not meeting
@@ -30,9 +30,9 @@ homepage            https://gnuplot.sourceforge.net/
 master_sites        sourceforge:project/gnuplot/gnuplot/${version}
 dist_subdir         ${name}/${version}
 
-checksums           rmd160  efdaa94df77226d70a9a2f9ae8ff9c56cd99785f \
-                    sha256  f68a3b0bbb7bbbb437649674106d94522c00bf2f285cce0c19c3180b1ee7e738 \
-                    size    7637308
+checksums           rmd160  ec67b66ad4bfaea7dcdcf87c37ceabdcd141c4d7 \
+                    sha256  9d39d8499c9533550144092375aac45ba8bf0c18c9cee50897fe411b6d93004e \
+                    size    7629259
 
 depends_build       port:pkgconfig
 
@@ -88,7 +88,7 @@ variant aquaterm description "Enable AquaTerm terminal" {
     configure.ldflags-append    "-F${frameworks_dir}"
 }
 
-variant x11 {
+variant x11 description "Enable X11 terminal" {
     configure.args-replace      --without-x --with-x
     depends_lib-append          port:xpm
 }
@@ -154,6 +154,14 @@ if {${os.platform} ne "darwin" || ${os.major} > 8} {
             default_variants-append +qt5
         }
     }
+}
+
+# PismoPorts: the x11 terminal is the interactive one on Tiger -- aquaterm,
+# wxt and qt are all out (see around this comment) -- and its libraries
+# (xorg-libX11, xpm) are already in the tree for xterm. Default it on, so a
+# plain `port install gnuplot` matches the archive built here.
+if {${os.platform} eq "darwin" && ${os.major} == 8} {
+    default_variants-append     +x11
 }
 
 # aquaterm is currently not building on 10.4

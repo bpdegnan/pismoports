@@ -266,3 +266,12 @@ texlive-bin-extra
 
 # Downloading papers and datasets from scripts.
 wget
+
+# DOSBox: DOS emulator for the DOS games (Railroad Tycoon Deluxe etc.).
+# Plain DOSBox over DOSBox-X: the dosbox-x port excludes ppc, needs SDL2 and
+# ffmpeg7, and its slower core hurts on a 500 MHz G3. libsdl resolves to the
+# real SDL 1.2 (libsdl12) on darwin <= 17.
+dosbox
+# DOSBox SVN r4301 with the PowerPC dynamic recompiler -- several times faster
+# than 0.74's interpreter on a G3. Installs as dosbox-svn beside dosbox.
+dosbox-svn

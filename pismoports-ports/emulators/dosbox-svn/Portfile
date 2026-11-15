@@ -1,0 +1,89 @@
+# -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
+
+PortSystem          1.0
+PortGroup           github 1.0
+
+# PismoPorts: DOSBox SVN r4301 plus jmarsh's PowerPC dynamic recompiler
+# (risc_ppc.h), the combination https://sourceforge.net/projects/dosbox-ppcjit/
+# ships for Tiger. Release DOSBox (port:dosbox, 0.74) has no PowerPC backend and
+# interprets every x86 instruction; with `core=dynamic` this is several times
+# faster on a G3. The backend is plain 32-bit PowerPC -- no AltiVec, no
+# mfocrf/fsqrt -- and flushes the icache with sys_icache_invalidate().
+#
+# The source is SVN trunk r4301. DOSBox Staging's early git history is a
+# mirror of that trunk; commit 77a4655 is r4301 and its tarball is
+# byte-for-byte the tree `svn export -r 4301` gives, so it is fetched from
+# there for a checksummable distfile.
+#
+# Installs as `dosbox-svn` beside port:dosbox; its settings file is
+# "~/Library/Preferences/DOSBox SVN Preferences", separate from 0.74's.
+
+name                dosbox-svn
+github.setup        dosbox-staging dosbox-staging 77a46559a6c82355a496a033a38b0b19a577bd48
+version             0.74-3-r4301
+revision            0
+categories          emulators
+platforms           darwin
+license             GPL-2+
+maintainers         nomaintainer
+
+description         DOSBox SVN with the PowerPC dynamic recompiler
+
+long_description    DOSBox is a DOS emulator supporting 286/386 realmode, directory \
+                    file system, XMS/EMS and many sound cards. This is SVN r4301 \
+                    with the PowerPC recompiling CPU core, for PowerPC Macs.
+
+homepage            https://www.vogons.org/viewtopic.php?f=32&t=65057
+
+github.tarball_from archive
+dist_subdir         ${name}
+checksums           rmd160  84002eb7bf4de116014f1d037d159c1c1084c546 \
+                    sha256  fbc336465548effba3664f4be081db65de78617b60e48eaf9160f46064a61917 \
+                    size    1223470
+
+depends_lib         port:libsdl \
+                    port:libsdl_net \
+                    port:libpng \
+                    port:zlib
+
+# patch-ppc-dynrec-r4301.diff: patch-r4301.diff from dosbox-ppcjit, verbatim
+#   (risc_ppc.h, the Apple icache flush, FPU_rec forward declaration).
+# patch-configure.ac-ppc-dynrec.diff: configure only turns the recompiler on
+#   for x86 and ARM; the ppcjit build set C_DYNREC in config.h by hand.
+patchfiles          patch-ppc-dynrec-r4301.diff \
+                    patch-configure.ac-ppc-dynrec.diff
+
+universal_variant   no
+supported_archs     ppc
+
+use_autoreconf      yes
+autoreconf.args     -fvi
+
+# No SDL_sound on Tiger -- see port:dosbox. It only plays compressed CD-audio
+# tracks in .cue images.
+configure.args      --disable-sdltest \
+                    --disable-alsatest \
+                    --enable-dynrec \
+                    --build=${configure.build_arch}-apple-darwin${os.major} \
+                    ac_cv_lib_SDL_sound_Sound_Init=no
+configure.cxxflags-append   -mdynamic-no-pic
+
+post-configure {
+    # Fail here rather than ship a build that quietly fell back to the
+    # interpreter.
+    if {[catch {exec grep -q "^#define C_DYNREC 1" ${worksrcpath}/config.h}]} {
+        return -code error "configure did not enable the PowerPC recompiler (C_DYNREC)"
+    }
+}
+
+post-destroot {
+    move ${destroot}${prefix}/bin/dosbox ${destroot}${prefix}/bin/${name}
+    move ${destroot}${prefix}/share/man/man1/dosbox.1 \
+         ${destroot}${prefix}/share/man/man1/${name}.1
+    xinstall -m 755 -d ${destroot}${prefix}/share/doc/${name}
+    xinstall -m 644 -W ${worksrcpath} \
+        README AUTHORS COPYING ChangeLog INSTALL THANKS \
+        ${destroot}${prefix}/share/doc/${name}
+}
+
+livecheck.type      none

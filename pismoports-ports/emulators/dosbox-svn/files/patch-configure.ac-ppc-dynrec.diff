@@ -1,0 +1,11 @@
+--- configure.ac.orig
++++ configure.ac
+@@ -390,7 +390,7 @@
+         AC_MSG_RESULT([no, using dynamic-x86])
+     fi
+   else 
+-    if test x$c_targetcpu = xarm ; then
++    if test x$c_targetcpu = xarm -o x$c_targetcpu = xpowerpc ; then
+       AC_DEFINE(C_DYNREC,1)
+       AC_MSG_RESULT(yes)
+     else 
